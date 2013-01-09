@@ -1,6 +1,7 @@
 /* vim: set et ts=2 sts=2 sw=2: */
 
 var expect = require('expect.js');
+var asyncTrialRunner = require('../../util/async-trial-runner');
 
 describe('Reanimator interposes on Date', function () {
   var build = require('../../util/hooks').build;
@@ -29,26 +30,12 @@ describe('Reanimator interposes on Date', function () {
   it('captures calls to Date.now', function (done) {
     driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
       then(function () {
-        return driver.executeAsyncScript(function (callback) {
-          var times = [];
-          var n = 5;
-
-          function runTrial() {
-            if (times.length < n) {
-              times.push(Date.now());
-              setTimeout(runTrial, 10);
-            } else {
-              Reanimator.cleanUp();
-              callback(JSON.stringify({
-                times: times,
-                log: Reanimator.flush()
-              }));
-            }
-          }
-
-          Reanimator.capture();
-          setTimeout(runTrial, 10);
-        });
+        return driver.executeAsyncScript(asyncTrialRunner, function () {
+            this.times = this.times || [];
+            this.times.push(Date.now());
+          }, {
+            numTrials: 3
+          });
       }).
       then(function (result) {
         result = JSON.parse(result);
@@ -63,26 +50,12 @@ describe('Reanimator interposes on Date', function () {
   it('captures calls to Date as a constructor with no args', function (done) {
     driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
       then(function () {
-        return driver.executeAsyncScript(function (callback) {
-          var times = [];
-          var n = 5;
-
-          function runTrial() {
-            if (times.length < n) {
-              times.push(Date.parse(new Date()));
-              setTimeout(runTrial, 10);
-            } else {
-              Reanimator.cleanUp();
-              callback(JSON.stringify({
-                times: times,
-                log: Reanimator.flush()
-              }));
-            }
-          }
-
-          Reanimator.capture();
-          setTimeout(runTrial, 10);
-        });
+        return driver.executeAsyncScript(asyncTrialRunner, function () {
+            this.times = this.times || [];
+            this.times.push(Date.parse(new Date()));
+          }, {
+            numTrials: 3
+          });
       }).
       then(function (result) {
         result = JSON.parse(result);
@@ -116,26 +89,12 @@ describe('Reanimator interposes on Date', function () {
   it('captures calls to Date as a function', function (done) {
     driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
       then(function () {
-        return driver.executeAsyncScript(function (callback) {
-          var times = [];
-          var n = 5;
-
-          function runTrial() {
-            if (times.length < n) {
-              times.push(Date.parse(Date()));
-              setTimeout(runTrial, 10);
-            } else {
-              Reanimator.cleanUp();
-              callback(JSON.stringify({
-                times: times,
-                log: Reanimator.flush()
-              }));
-            }
-          }
-
-          Reanimator.capture();
-          setTimeout(runTrial, 10);
-        });
+        return driver.executeAsyncScript(asyncTrialRunner, function () {
+            this.times = this.times || [];
+            this.times.push(Date.parse(Date()));
+          }, {
+            numTrials: 3
+          });
       }).
       then(function (result) {
         result = JSON.parse(result);
