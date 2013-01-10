@@ -5,6 +5,7 @@ var asyncTrialRunner = require('../../util/async-trial-runner');
 
 describe('Reanimator interposes on Date', function () {
   var build = require('../../util/hooks').build;
+  var url = 'http://localhost:' + process.env.FIXTURE_PORT + '/index.html';
   var driver;
 
   beforeEach(function (done) {
@@ -19,7 +20,7 @@ describe('Reanimator interposes on Date', function () {
   });
 
   it('captures calls to Date.now', function (done) {
-    driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
+    driver.get(url).
       then(function () {
         return driver.executeAsyncScript(asyncTrialRunner, function () {
             this.times = this.times || [];
@@ -38,17 +39,18 @@ describe('Reanimator interposes on Date', function () {
       });
   });
 
-  it('captures calls to Date as a constructor with no args', function (done) {
-    driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
-      then(function () {
+  describe('new Date()', function () {
+    it('is captured', function (done) {
+      driver.get(url).
+        then(function () {
         return driver.executeAsyncScript(asyncTrialRunner, function () {
-            this.times = this.times || [];
-            this.times.push(Date.parse(new Date()));
-          }, {
-            numTrials: 3
-          });
+          this.times = this.times || [];
+          this.times.push(Date.parse(new Date()));
+        }, {
+          numTrials: 3
+        });
       }).
-      then(function (result) {
+        then(function (result) {
         result = JSON.parse(result);
 
         expect(result.log.dates.length).to.be(result.times.length);
@@ -56,11 +58,26 @@ describe('Reanimator interposes on Date', function () {
         expect(result.log.dates).to.eql(result.times);
         done();
       });
+    });
+
+    it('returns an instance of "Date"', function (done) {
+      driver.get(url).
+        then(function () {
+          return driver.executeScript(function () {
+            Reanimator.capture();
+            return (new Date()) instanceof Date;
+          });
+        }).
+        then(function (result) {
+          expect(result).to.be(true);
+          done();
+        });
+    });
   });
 
   it('does not capture calls to Date as a constructor with args',
     function (done) {
-      driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
+      driver.get(url).
         then(function () {
           return driver.executeScript(function () {
             Reanimator.capture();
@@ -78,7 +95,7 @@ describe('Reanimator interposes on Date', function () {
     });
 
   it('captures calls to Date as a function', function (done) {
-    driver.get('http://localhost:' + process.env.FIXTURE_PORT + '/index.html').
+    driver.get(url).
       then(function () {
         return driver.executeAsyncScript(asyncTrialRunner, function () {
             this.times = this.times || [];
