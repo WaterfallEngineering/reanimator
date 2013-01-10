@@ -11,16 +11,7 @@ describe('Reanimator interposes on timer interrupts', function () {
   var setTimeout = this.setTimeout;
 
   beforeEach(function (done) {
-    build({
-      server:
-        'http://localhost:' + process.env.DRIVER_PORT + '/wd/hub',
-      capabilities: {
-        'browserName': 'chrome',
-        'version': '',
-        'platform': 'ANY',
-        'javascriptEnabled': true
-      }
-    }).then(function (builtDriver) {
+    build().then(function (builtDriver) {
       driver = builtDriver;
       done();
     });

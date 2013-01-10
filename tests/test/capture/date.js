@@ -8,16 +8,7 @@ describe('Reanimator interposes on Date', function () {
   var driver;
 
   beforeEach(function (done) {
-    build({
-      server:
-        'http://localhost:' + process.env.DRIVER_PORT + '/wd/hub',
-      capabilities: {
-        'browserName': 'chrome',
-        'version': '',
-        'platform': 'ANY',
-        'javascriptEnabled': true
-      }
-    }).then(function (builtDriver) {
+    build().then(function (builtDriver) {
       driver = builtDriver;
       done();
     });

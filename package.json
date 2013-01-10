@@ -5,6 +5,7 @@
     "description": "Capture and replay web application execution traces",
 
     "dependencies": {
+        "lodash": "1.0.0-rc.3"
     },
 
     "devDependencies": {
