@@ -3,8 +3,17 @@
 <head>
   <meta charset="utf-8"/>
   <title>Home</title>
-  <script src='/js/reanimator.js'></script>
+  <script src='/js/lib/reanimator.js'></script>
+  <script src='/js/lib/reanimator/util/event/serialize.js'></script>
 </head>
 <body>
+  <div id="main">
+    <button id="target">Click me!</button>
+    <button id="trigger-target">Trigger me!</button>
+    <textarea id="key-target"></textarea>
+  </div>
+  <div id="log">
+  </div>
+  <script src='/js/jquery-1.8.3.js'></script>
 </body>
 </html>
