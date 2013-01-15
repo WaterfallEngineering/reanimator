@@ -121,8 +121,8 @@ $(document).ready(function () {
       }
     },
     tiles: {
-      across: 4,
-      down: 4,
+      across: 3,
+      down: 3,
       width: 100,
       height: 100 
     }
