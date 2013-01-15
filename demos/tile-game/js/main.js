@@ -131,7 +131,9 @@ $(document).ready(function () {
   if (location.search.slice(1) === 'replay') {
     $(window).on('message', function (e) {
       var log = JSON.parse(e.originalEvent.data);
-      Reanimator.replay(log);
+      Reanimator.replay(log, {
+        delay: 'realtime'
+      });
       init(config);
     });
   } else {
