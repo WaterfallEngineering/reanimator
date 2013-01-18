@@ -7,6 +7,12 @@ TEST_SLOW ?= 2000
 NODE_MODULES = $(PWD)/node_modules
 SERVER_PID_FILE := $(PWD)/$(shell echo ".test-server-pid.$$RANDOM")
 PHANTOM_PID_FILE := $(PWD)/$(shell echo ".phantom-pid.$$RANDOM")
+JS_FILES = $(shell find lib -name "*.js" -type f) 
+
+all: dist/reanimator.js
+
+dist/reanimator.js: $(JS_FILES) app.build.js
+	@node node_modules/.bin/r.js -o app.build.js
 
 fixture-server:
 	@cd tests/fixtures ; \
@@ -19,7 +25,7 @@ phantom:
 		echo "$$!" > $(PHANTOM_PID_FILE) ; \
 		cd $(PWD)
 
-test: fixture-server phantom
+test: dist/reanimator.js fixture-server phantom
 	@export DRIVER_PORT=$(DRIVER_PORT) ; \
 		export FIXTURE_PORT=$(SERVER_PORT) ; \
 		$(NODE_MODULES)/.bin/mocha tests/test --recursive \

@@ -4,11 +4,10 @@
     "author": "Lon Ingram <lon@waterfallmobile.com>",
     "description": "Capture and replay web application execution traces",
 
-    "dependencies": {
-        "lodash": "1.0.0-rc.3"
-    },
-
     "devDependencies": {
+        "requirejs": "2.1.x",
+        "cajon": "0.0.x",
+        "lodash": "1.0.0-rc.3",
         "expect.js": "0.1.x",
         "http-server": "0.5.x",
         "mocha": "1.3.x",
