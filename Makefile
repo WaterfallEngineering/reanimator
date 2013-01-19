@@ -26,7 +26,10 @@ phantom:
 		cd $(PWD)
 
 test: dist/reanimator.js fixture-server phantom
-	@export DRIVER_PORT=$(DRIVER_PORT) ; \
+	@mkdir -p tests/fixtures/js/lib ; \
+		ln -s $(PWD)/dist/reanimator.js tests/fixtures/js/lib/reanimator.js ; \
+		ln -s $(PWD)/lib/reanimator tests/fixtures/js/lib/reanimator ; \
+		export DRIVER_PORT=$(DRIVER_PORT) ; \
 		export FIXTURE_PORT=$(SERVER_PORT) ; \
 		$(NODE_MODULES)/.bin/mocha tests/test --recursive \
 			--globals define \
@@ -35,6 +38,7 @@ test: dist/reanimator.js fixture-server phantom
 		STATUS=$$? ; \
 		kill -9 `cat $(SERVER_PID_FILE)` ; rm $(SERVER_PID_FILE) ; \
 		kill -9 `cat $(PHANTOM_PID_FILE)` ; rm $(PHANTOM_PID_FILE) ; \
+		rm -rf tests/fixtures/js/lib ; \
 		exit $$STATUS
 
 .PHONY: test fixture-server
