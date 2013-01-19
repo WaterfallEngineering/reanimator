@@ -4,9 +4,9 @@ Reanimator
 **Capture and replay JavaScript applications**
 
 Reanimator captures non-deterministic input to a JavaScript application in a log
-that can replayed at a later date. It was originaly designed for debugging web
-application crashes in the wild, but it may be useful for other purposes, such
-as usability testing and tutorials.
+that can replayed at a later date. It was originally designed for recording web
+application crashes in the wild for later debugging, but it may be useful for
+other purposes, such as usability testing and tutorials.
 
 Reanimator consists of a core, which is responsible for capture setup and
 driving the replay, and one or more [plugins](#reanimatorplug), which are
