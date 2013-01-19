@@ -809,6 +809,24 @@ function capture_setInterval(code, delay) {
     ].concat(args));
 }
 
+function replay_setInterval(code, delay) {
+  var args = Array.prototype.slice.call(arguments, 2);
+  var id = replay_setInterval.id;
+  var handle;
+
+  if (typeof code === 'string') {
+    code = new Function(code);
+  }
+
+  replay_setInterval.handlers[id] = {
+    fn: code,
+    args: args
+  };
+  replay_setInterval.id++;
+
+  return id;
+}
+
 Reanimator.plug('setTimeout', {
   init: function init(native) {
     _native = native;
@@ -853,7 +871,14 @@ Reanimator.plug('setInterval', {
 
   beforeReplay: function replay(log, config) {
     _log = log;
-    //global.setInterval = replay_setInterval;
+    global.setInterval = replay_setInterval;
+    replay_setInterval.id = 0;
+    replay_setInterval.handlers = {};
+  },
+
+  replay: function (event) {
+    var handler = replay_setInterval.handlers[event.id];
+    _native.setTimeout.apply(global, [handler.fn, 0].concat(handler.args));
   },
 
   cleanUp: function () {

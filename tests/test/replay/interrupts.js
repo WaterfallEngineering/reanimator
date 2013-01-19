@@ -63,4 +63,55 @@ describe('Reanimator replays captured timer interrupts', function () {
         done();
       });
   });
+
+  it('setInterval', function (done) {
+    var events = [{
+        type: 'setInterval',
+        id: 0,
+        time: 123
+      }, {
+        type: 'setInterval',
+        id: 0,
+        time: 123
+      }, {
+        type: 'setInterval',
+        id: 0,
+        time: 123
+      }, {
+        type: 'setInterval',
+        id: 1,
+        time: 123
+      }, {
+        type: 'setInterval',
+        id: 1,
+        time: 123
+      }];
+
+    driver.get(url).
+      then(function () {
+        return driver.executeAsyncScript(function (events, callback) {
+          var result = [];
+          Reanimator.replay({
+            dates: [],
+            events: events
+          });
+
+          setInterval(function () {
+            result.push(0);
+          }, 100);
+          setInterval(function () {
+            result.push(1);
+
+            if (result.length >= 5) {
+              Reanimator.cleanUp();
+              callback(result);
+            }
+          }, 30);
+        }, events);
+      }).
+      then(function (result) {
+        expect(result).to.eql(_.pluck(events, 'id'));
+        done();
+      });
+  });
 });
