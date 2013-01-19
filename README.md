@@ -24,6 +24,10 @@ Reanimator was inspired by
 Elson](http://research.microsoft.com/en-us/people/jelson/), and [Jon
 Howell](http://research.microsoft.com/en-us/people/howell/).
 
+## Demos
+
+[Tile game](http://waterfallengineering.github.com/reanimator/tile-game/index.html)
+
 # API
 
 ## Reanimator.capture
