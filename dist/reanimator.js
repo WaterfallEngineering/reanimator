@@ -848,6 +848,7 @@ Reanimator.plug('setTimeout', {
 
   replay: function (event) {
     var handler = replay_setTimeout.handlers[event.id];
+    // schedule the callback for the next tick
     _native.setTimeout.apply(global, [handler.fn, 0].concat(handler.args));
   },
 
@@ -878,6 +879,7 @@ Reanimator.plug('setInterval', {
 
   replay: function (event) {
     var handler = replay_setInterval.handlers[event.id];
+    // schedule the callback for the next tick
     _native.setTimeout.apply(global, [handler.fn, 0].concat(handler.args));
   },
 
