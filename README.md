@@ -1,7 +1,28 @@
-reanimator
+Reanimator
 ==========
 
-Capture and replay execution traces of client-side web applications
+**Capture and replay JavaScript applications**
+
+Reanimator captures non-deterministic input to a JavaScript application in a log
+that can replayed at a later date. It was originaly designed for debugging web
+application crashes in the wild, but it may be useful for other purposes, such
+as usability testing and tutorials.
+
+Reanimator consists of a core, which is responsible for capture setup and
+driving the replay, and one or more [plugins](#reanimatorplug), which are
+responsible for capturing and replaying non-deterministic input.
+
+Reanimator ships with plugins for capturing and replaying random numbers, dates,
+and timer interrupts. In addition, Reanimator provides plugins for capturing and
+replaying callback invocations in the following frameworks:
+
+- jQuery 1.8.3
+
+Reanimator was inspired by
+[Mugshot](http://research.microsoft.com/apps/pubs/default.aspx?id=120937) by
+[James Mickens](http://research.microsoft.com/en-us/people/mickens/), [Jeremy
+Elson](http://research.microsoft.com/en-us/people/jelson/), and [Jon
+Howell](http://research.microsoft.com/en-us/people/howell/).
 
 # API
 
@@ -95,3 +116,23 @@ A plugin is an object that implements the following methods:
     Arguments
   - `event` - *object* - the event to replay, in the format specified above
     in `Reanimator.flush`
+
+# License
+
+Reanimator is made available under the [MIT
+License](http://opensource.org/licenses/mit-license.php).
+
+# Acknowledgements and Attribution
+
+Thanks to [James Mickens](http://research.microsoft.com/en-us/people/mickens/),
+[Jeremy Elson](http://research.microsoft.com/en-us/people/jelson/), and [Jon
+Howell](http://research.microsoft.com/en-us/people/howell/) for their excellent
+work on
+[Mugshot](http://research.microsoft.com/apps/pubs/default.aspx?id=120937), which
+inspired Reanimator.
+
+The image `demos/tile-game/img/reanimator.jpg` is the work [Re-Animator]
+(http://fav.me/d24n0v9) and is copyright (c) 2009
+[~cool-slayer](http://cool-slayer.deviantart.com/) and made available under an
+[Attribution-Noncommercial-No Derivative Works 3.0
+License](http://creativecommons.org/licenses/by-nc-nd/3.0/).
