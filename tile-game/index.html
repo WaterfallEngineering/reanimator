@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Home</title>
+  <style>
+    body {
+      text-align: center;
+    }
+
+    iframe, p {
+      display: block;
+      margin: auto;
+
+      width: 393px;
+      height: 258px;
+    }
+
+    p {
+      height: auto;
+      margin: 1em auto;
+      text-align: left;
+    }
+
+    button {
+      font-size: 2em;
+      margin: 1em auto;
+      padding: 1em;
+    }
+  </style>
+</head>
+<body>
+  <p>
+    The image is the work <a href="http://fav.me/d24n0v9">Re-Animator</a> and is
+    copyright (c) 2009 <a href="http://cool-slayer.deviantart.com/">~cool-slayer</a>
+    and made available under an <a href="http://creativecommons.org/licenses/by-nc-nd/3.0/">Attribution-Noncommercial-No Derivative Works 3.0 License</a>.
+  </p>
+  <iframe class="source" src="game.html"></iframe>
+  <button class="reanimate">Reanimate!</button>
+  <iframe class="target" src="game.html?replay"></iframe>
+  <script src='js/jquery-1.8.3.js'></script>
+  <script>
+    $(document).ready(function () {
+      var source = window.sourceFrame = $('iframe.source')[0].contentWindow;
+      var target = window.targetFrame = $('iframe.target')[0].contentWindow;
+
+      $('.reanimate').on('click', function () {
+        target.postMessage(JSON.stringify(source.Reanimator.flush()), '*');
+      });
+    });
+  </script>
+</body>
+</html>

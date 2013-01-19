@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Home</title>
+  <script src='js/reanimator.js'></script>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    .tile-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      background: white;
+    }
+
+    .tile {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background-image: url(img/reanimator.jpg);
+    }
+
+    .shim {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      opacity: 0;
+      background: white;
+    }
+
+    .playable .shim {
+      background: blue;
+    }
+
+    .shim:hover {
+      opacity: 0.25;
+    }
+
+    .tile-template {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="tile-template tile">
+    <div class="text"></div>
+    <div class="shim"></div>
+  </div>
+  <div class="tile-container">
+  </div>
+  <script src='js/jquery-1.8.3.js'></script>
+  <script src='js/main.js'></script>
+</body>
+</html>
