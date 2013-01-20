@@ -54,12 +54,13 @@ describe('Reanimator interposes on jQuery event handlers', function () {
 
           expect(result.log.events.length).to.be(1);
           expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].domEventType).to.be('MouseEvent');
+          expect(result.log.events[0].details.type).to.be('on');
+          expect(result.log.events[0].details.domEventType).to.be('MouseEvent');
           expect(result.log.events[0].time).
             to.be.above(result.expectedTime - 5);
           expect(result.log.events[0].time).
             to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details).to.eql(result.expected);
+          expect(result.log.events[0].details.details).to.eql(result.expected);
           done();
         });
     });
@@ -110,12 +111,13 @@ describe('Reanimator interposes on jQuery event handlers', function () {
           expect(result.log.events.length).to.be(2);
 
           expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].domEventType).to.be('MouseEvent');
+          expect(result.log.events[0].details.type).to.be('on');
+          expect(result.log.events[0].details.domEventType).to.be('MouseEvent');
           expect(result.log.events[0].time).
             to.be.above(result.expectedTime - 5);
           expect(result.log.events[0].time).
             to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details).to.eql(result.expected);
+          expect(result.log.events[0].details.details).to.eql(result.expected);
 
           expect(result.log.events[1].type).to.be('setTimeout');
 
@@ -161,12 +163,15 @@ describe('Reanimator interposes on jQuery event handlers', function () {
 
               expect(result.log.events.length).to.be(1);
               expect(result.log.events[0].type).to.be('jquery');
-              expect(result.log.events[0].domEventType).to.be('MouseEvent');
+              expect(result.log.events[0].details.type).to.be('on');
+              expect(result.log.events[0].details.domEventType).
+                to.be('MouseEvent');
               expect(result.log.events[0].time).
                 to.be.above(result.expectedTime - 5);
               expect(result.log.events[0].time).
                 to.be.below(result.expectedTime + 5);
-              expect(result.log.events[0].details).to.eql(result.expected);
+              expect(result.log.events[0].details.details).
+                to.eql(result.expected);
               done();
             });
       });
@@ -205,12 +210,14 @@ describe('Reanimator interposes on jQuery event handlers', function () {
 
           expect(result.log.events.length).to.be(1);
           expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].domEventType).to.be('KeyboardEvent');
+          expect(result.log.events[0].details.type).to.be('on');
+          expect(result.log.events[0].details.domEventType).
+            to.be('KeyboardEvent');
           expect(result.log.events[0].time).
             to.be.above(result.expectedTime - 5);
           expect(result.log.events[0].time).
             to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details).to.eql(result.expected);
+          expect(result.log.events[0].details.details).to.eql(result.expected);
           done();
         });
     });

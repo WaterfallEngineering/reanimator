@@ -53,7 +53,7 @@ describe('Reanimator interposes on timer interrupts', function () {
             event = result.events[i];
 
             expect(event.type).to.be('setTimeout');
-            expect(event.id).to.be(expectedOrder[i]);
+            expect(event.details.id).to.be(expectedOrder[i]);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
           }
@@ -94,7 +94,7 @@ describe('Reanimator interposes on timer interrupts', function () {
             event = result.events[i];
 
             expect(event.type).to.be('setTimeout');
-            expect(event.id).to.be(expectedOrder[i]);
+            expect(event.details.id).to.be(expectedOrder[i]);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
           }
@@ -133,7 +133,7 @@ describe('Reanimator interposes on timer interrupts', function () {
             event = result.events[i];
 
             expect(event.type).to.be('setInterval');
-            expect(event.id).to.be(0);
+            expect(event.details.id).to.be(0);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
           }
@@ -179,7 +179,7 @@ describe('Reanimator interposes on timer interrupts', function () {
             event = result.events[i];
 
             expect(event.type).to.be('setInterval');
-            expect(event.id).to.be(0);
+            expect(event.details.id).to.be(0);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
           }

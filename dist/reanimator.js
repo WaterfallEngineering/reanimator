@@ -758,7 +758,9 @@ function getHandlerFn(type, fn, id) {
   return function () {
     _log.events.push({
       type: type,
-      id: id,
+      details: {
+        id: id
+      },
       time: _native.Date.now()
     });
     fn.apply(this, Array.prototype.slice.call(arguments));
@@ -847,7 +849,7 @@ Reanimator.plug('setTimeout', {
   },
 
   replay: function (event) {
-    var handler = replay_setTimeout.handlers[event.id];
+    var handler = replay_setTimeout.handlers[event.details.id];
     // schedule the callback for the next tick
     _native.setTimeout.apply(global, [handler.fn, 0].concat(handler.args));
   },
@@ -878,7 +880,7 @@ Reanimator.plug('setInterval', {
   },
 
   replay: function (event) {
-    var handler = replay_setInterval.handlers[event.id];
+    var handler = replay_setInterval.handlers[event.details.id];
     // schedule the callback for the next tick
     _native.setTimeout.apply(global, [handler.fn, 0].concat(handler.args));
   },
@@ -999,7 +1001,7 @@ var _native, _log;
 
 var triggered;
 
-function getJQueryHandlerFn(fn) {
+function getOnHandlerFn(fn) {
   return function (event) {
     var originalEvent = event.originalEvent;
     var entry;
@@ -1008,26 +1010,29 @@ function getJQueryHandlerFn(fn) {
       // event is not triggered, so capture it
       entry = {
         time: _native.Date.now(),
-        type: 'jquery'
+        type: 'jquery',
+        details: {
+          type: 'on'
+        }
       };
 
       if (global.MouseEvent && originalEvent instanceof MouseEvent) {
-        entry.domEventType = 'MouseEvent';
+        entry.details.domEventType = 'MouseEvent';
       } else if (global.KeyboardEvent && 
           originalEvent instanceof KeyboardEvent
       ) {
-        entry.domEventType = 'KeyboardEvent';
+        entry.details.domEventType = 'KeyboardEvent';
       } else if (global.UIEvent && originalEvent instanceof UIEvent) {
         entry.domEventType = 'UIEvent';
       } else if (global.CustomEvent &&
           originalEvent instanceof CustomEvent
       ) {
-        entry.domEventType = 'CustomEvent';
+        entry.details.domEventType = 'CustomEvent';
       } else {
-        entry.domEventType = 'Event';
+        entry.details.domEventType = 'Event';
       }
 
-      entry.details = serialize(originalEvent);
+      entry.details.details = serialize(originalEvent);
 
       _log.events.push(entry);
     }
@@ -1085,7 +1090,7 @@ function capture_on( types, selector, data, fn, /*INTERNAL*/ one ) {
   }
 
   origFn = fn;
-  fn = getJQueryHandlerFn(fn);
+  fn = getOnHandlerFn(fn);
   result = $on.call(this, types, selector, data, fn, one);
 
   // Use same guid so caller can remove using origFn
@@ -1319,22 +1324,35 @@ var eventCreators = {
   }
 };
 
-function jquery_replay(event) {
-  var create = eventCreators[event.domEventType];
+var replayers = {
+  on: function (event) {
+    var create = eventCreators[event.details.domEventType];
 
-  $fix = $.event.fix;
+    $fix = $.event.fix;
 
-  if (!create) {
-    // XXX: Are we sure we want to throw here? Might make sense to just
-    // default to Event and maybe log a warning to the console
-    throw 'Cannot dispatch event of type "' + event.domEventType + '"';
+    if (!create) {
+      // XXX: Are we sure we want to throw here? Might make sense to just
+      // default to Event and maybe log a warning to the console
+      throw 'Cannot dispatch event of type "' +
+        event.details.domEventType + '"';
+    }
+
+    var domEvent = create(event.details.details);
+
+    $.event.fix = fix;
+    traverseToElement(event.details.details.target).dispatchEvent(domEvent);
+    $.event.fix = $fix;
   }
-  
-  var domEvent = create(event.details);
+};
 
-  $.event.fix = fix;
-  traverseToElement(event.details.target).dispatchEvent(domEvent);
-  $.event.fix = $fix;
+function jquery_replay(event) {
+  var replayer = replayers[event.details.type];
+  
+  if (!replayer) {
+    throw 'No replayer for jQuery event of type "' + event.details.type + '"';
+  }
+
+  replayer(event);
 }
 
 Reanimator.plug('jquery', {

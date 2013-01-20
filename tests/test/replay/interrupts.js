@@ -23,15 +23,21 @@ describe('Reanimator replays captured timer interrupts', function () {
   it('setTimeout', function (done) {
     var events = [{
         type: 'setTimeout',
-        id: 0,
+        details: {
+          id: 0
+        },
         time: 123
       }, {
         type: 'setTimeout',
-        id: 2,
+        details: {
+          id: 2
+        },
         time: 123
       }, {
         type: 'setTimeout',
-        id: 1,
+        details: {
+          id: 1
+        },
         time: 123
       }];
 
@@ -59,7 +65,7 @@ describe('Reanimator replays captured timer interrupts', function () {
         }, events);
       }).
       then(function (result) {
-        expect(result).to.eql(_.pluck(events, 'id'));
+        expect(result).to.eql(_.pluck(_.pluck(events, 'details'), 'id'));
         done();
       });
   });
@@ -67,23 +73,33 @@ describe('Reanimator replays captured timer interrupts', function () {
   it('setInterval', function (done) {
     var events = [{
         type: 'setInterval',
-        id: 0,
+        details: {
+          id: 0
+        },
         time: 123
       }, {
         type: 'setInterval',
-        id: 0,
+        details: {
+          id: 0
+        },
         time: 123
       }, {
         type: 'setInterval',
-        id: 0,
+        details: {
+          id: 0
+        },
         time: 123
       }, {
         type: 'setInterval',
-        id: 1,
+        details: {
+          id: 1
+        },
         time: 123
       }, {
         type: 'setInterval',
-        id: 1,
+        details: {
+          id: 1
+        },
         time: 123
       }];
 
@@ -110,7 +126,7 @@ describe('Reanimator replays captured timer interrupts', function () {
         }, events);
       }).
       then(function (result) {
-        expect(result).to.eql(_.pluck(events, 'id'));
+        expect(result).to.eql(_.pluck(_.pluck(events, 'details'), 'id'));
         done();
       });
   });
