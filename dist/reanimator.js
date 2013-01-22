@@ -1100,10 +1100,12 @@ function capture_on( types, selector, data, fn, /*INTERNAL*/ one ) {
 }
 
 function capture_trigger() {
+  var result;
   // triggered events are deterministic, so ignore them
   triggered++;
-  $trigger.apply(this, Array.prototype.slice.call(arguments));
+  result = $trigger.apply(this, Array.prototype.slice.call(arguments));
   triggered--;
+  return result;
 }
 
 function jquery_capture(log, config) {
