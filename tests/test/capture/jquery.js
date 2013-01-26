@@ -6,7 +6,8 @@ var webdriver = require('../../../lib/selenium-webdriver/node/webdriver');
 
 describe('Reanimator interposes on jQuery event handlers', function () {
   var build = require('../../util/hooks').build;
-  var url = 'http://localhost:' + process.env.FIXTURE_PORT + '/index.html';
+  var url =
+    'http://localhost:' + process.env.FIXTURE_PORT + '/jquery.1.8.3.html';
   var driver;
 
   var setTimeout = this.setTimeout;
@@ -154,9 +155,8 @@ describe('Reanimator interposes on jQuery event handlers', function () {
         driver.get(url).
           then(function () {
             return driver.executeScript(function (eventName) {
-              var createEvent = document.createEvent;
-              Reanimator.capture();
-              document.createEvent = createEvent;
+              // use the native createEvent
+              document.createEvent = window._createEvent;
 
               $('#target').on(eventName, function (e) {
                 window.expected = Reanimator.util.event.serialization.
@@ -178,16 +178,18 @@ describe('Reanimator interposes on jQuery event handlers', function () {
           }).
           then(function (result) {
             result = JSON.parse(result);
+            var events = result.log.events.filter(function (entry) {
+              return entry.type === 'dom';
+            });
 
-            expect(result.log.events.length).to.be(1);
-            expect(result.log.events[0].type).to.be('dom');
-            expect(result.log.events[0].details.type).
+            expect(events.length).to.be(1);
+            expect(events[0].details.type).
               to.be(eventToTest.domEventType);
-            expect(result.log.events[0].time).
+            expect(events[0].time).
               to.be.above(result.expectedTime - 5);
-            expect(result.log.events[0].time).
+            expect(events[0].time).
               to.be.below(result.expectedTime + 5);
-            expect(result.log.events[0].details.details).
+            expect(events[0].details.details).
               to.eql(result.expected);
             done();
           });
@@ -199,9 +201,8 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             return driver.executeScript(function (eventName) {
               window.triggered = false;
 
-              var createEvent = document.createEvent;
-              Reanimator.capture();
-              document.createEvent = createEvent;
+              // use the native createEvent
+              document.createEvent = window._createEvent;
               $('#target').on(eventName, function (e) {
                 window.triggered = true;
               });
@@ -222,8 +223,11 @@ describe('Reanimator interposes on jQuery event handlers', function () {
           }).
           then(function (result) {
             result = JSON.parse(result);
+            var events = result.log.events.filter(function (entry) {
+              return entry.type === 'dom';
+            });
 
-            expect(result.log.events.length).to.be(0);
+            expect(events.length).to.be(0);
 
             expect(result.triggered).to.be(true);
             done();
@@ -236,9 +240,8 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             return driver.executeScript(function (eventName) {
               window.triggered = false;
 
-              var createEvent = document.createEvent;
-              Reanimator.capture();
-              document.createEvent = createEvent;
+              // use the native createEvent
+              document.createEvent = window._createEvent;
               $('#trigger-target').on(eventName, function (e) {
                 window.triggered = true;
               });
@@ -272,20 +275,24 @@ describe('Reanimator interposes on jQuery event handlers', function () {
           }).
           then(function (result) {
             result = JSON.parse(result);
+            var events = result.log.events.filter(function (entry) {
+              return entry.type === 'dom' ||
+                entry.type === 'setTimeout';
+            });
 
-            expect(result.log.events.length).to.be(2);
+            expect(events.length).to.be(2);
 
-            expect(result.log.events[0].type).to.be('dom');
-            expect(result.log.events[0].details.type).
+            expect(events[0].type).to.be('dom');
+            expect(events[0].details.type).
               to.be(eventToTest.domEventType);
-            expect(result.log.events[0].time).
+            expect(events[0].time).
               to.be.above(result.expectedTime - 5);
-            expect(result.log.events[0].time).
+            expect(events[0].time).
               to.be.below(result.expectedTime + 5);
-            expect(result.log.events[0].details.details).
+            expect(events[0].details.details).
               to.eql(result.expected);
 
-            expect(result.log.events[1].type).to.be('setTimeout');
+            expect(events[1].type).to.be('setTimeout');
 
             expect(result.triggered).to.be(true);
             done();
@@ -304,9 +311,8 @@ describe('Reanimator interposes on jQuery event handlers', function () {
                   $('#target').off(eventName, handler);
                 }
 
-                var createEvent = document.createEvent;
-                Reanimator.capture();
-                document.createEvent = createEvent;
+                // use the native createEvent
+                document.createEvent = window._createEvent;
                 $('#target').on(eventName, handler);
               }, eventToTest.name);
             }).
@@ -324,16 +330,19 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             }).
             then(function (result) {
               result = JSON.parse(result);
+              var events = result.log.events.filter(function (entry) {
+                return entry.type === 'dom';
+              });
 
-              expect(result.log.events.length).to.be(1);
-              expect(result.log.events[0].type).to.be('dom');
-              expect(result.log.events[0].details.type).
+              expect(events.length).to.be(1);
+              expect(events[0].type).to.be('dom');
+              expect(events[0].details.type).
                 to.be(eventToTest.domEventType);
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.above(result.expectedTime - 5);
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.below(result.expectedTime + 5);
-              expect(result.log.events[0].details.details).
+              expect(events[0].details.details).
                 to.eql(result.expected);
               done();
             });
@@ -357,9 +366,8 @@ describe('Reanimator interposes on jQuery event handlers', function () {
                   $('#target').off(eventName, handler2);
                 }
 
-                var createEvent = document.createEvent;
-                Reanimator.capture();
-                document.createEvent = createEvent;
+                // use the native createEvent
+                document.createEvent = window._createEvent;
                 $('#target').on(eventName, handler1);
                 $('#target').on(eventName, handler2);
               }, eventToTest.name);
@@ -379,24 +387,27 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             }).
             then(function (result) {
               result = JSON.parse(result);
+              var events = result.log.events.filter(function (entry) {
+                return entry.type === 'dom';
+              });
 
-              expect(result.log.events.length).to.be(1);
-              expect(result.log.events[0].type).to.be('dom');
-              expect(result.log.events[0].details.type).
+              expect(events.length).to.be(1);
+              expect(events[0].type).to.be('dom');
+              expect(events[0].details.type).
                 to.be(eventToTest.domEventType);
 
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.above(result.expectedTime1 - 5);
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.below(result.expectedTime1 + 5);
-              expect(result.log.events[0].details.details).
+              expect(events[0].details.details).
                 to.eql(result.expected1);
 
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.above(result.expectedTime2 - 5);
-              expect(result.log.events[0].time).
+              expect(events[0].time).
                 to.be.below(result.expectedTime2 + 5);
-              expect(result.log.events[0].details.details).
+              expect(events[0].details.details).
                 to.eql(result.expected2);
 
               done();

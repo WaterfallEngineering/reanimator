@@ -2,7 +2,7 @@
 
 var expect = require('expect.js');
 
-describe('Reanimator interposes document.createEvent', function () {
+describe('Reanimator interposes on document.createEvent', function () {
   var build = require('../../util/hooks').build;
   var url = 'http://localhost:' + process.env.FIXTURE_PORT + '/index.html';
   var driver;

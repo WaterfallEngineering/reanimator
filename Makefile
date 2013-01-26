@@ -9,10 +9,15 @@ SERVER_PID_FILE := $(PWD)/$(shell echo ".test-server-pid.$$RANDOM")
 PHANTOM_PID_FILE := $(PWD)/$(shell echo ".phantom-pid.$$RANDOM")
 JS_FILES = $(shell find lib -name "*.js" -type f) 
 
-all: dist/reanimator.js demos/tile-game/js/reanimator.js
+all: dist/reanimator.js \
+	dist/reanimator-jquery.1.8.3.js \
+	demos/tile-game/js/reanimator.js
 
 dist/reanimator.js: $(JS_FILES) app.build.js
 	@node node_modules/.bin/r.js -o app.build.js
+
+dist/reanimator-jquery.1.8.3.js: $(JS_FILES) jquery.1.8.3.build.js
+	@node node_modules/.bin/r.js -o jquery.1.8.3.build.js
 
 demos/tile-game/js/reanimator.js: dist/reanimator.js
 	@ln -s $(PWD)/dist/reanimator.js demos/tile-game/js/reanimator.js ; \
@@ -33,6 +38,8 @@ phantom:
 test: dist/reanimator.js fixture-server phantom
 	@mkdir -p tests/fixtures/js/lib ; \
 		ln -s $(PWD)/dist/reanimator.js tests/fixtures/js/lib/reanimator.js ; \
+		ln -s $(PWD)/dist/reanimator-jquery.1.8.3.js \
+			tests/fixtures/js/lib/reanimator-jquery.1.8.3.js ; \
 		ln -s $(PWD)/lib/reanimator tests/fixtures/js/lib/reanimator ; \
 		export DRIVER_PORT=$(DRIVER_PORT) ; \
 		export FIXTURE_PORT=$(SERVER_PORT) ; \

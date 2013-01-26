@@ -45,6 +45,7 @@ describe('Reanimator replays captured Dates', function () {
     driver.get(url).
       then(function () {
         return driver.executeScript(function (dates) {
+          var expectedString = (new Date(23)).toUTCString();
           Reanimator.replay({
             dates: dates,
             events: []
@@ -52,15 +53,22 @@ describe('Reanimator replays captured Dates', function () {
 
           var result = [new Date(), new Date(), new Date()];
 
-          return [ result.reduce(function (prev, curr) {
-            return prev && curr instanceof Date;
-          }, true)].concat(result.map(function (v) {
-            return v.valueOf();
-          }));
+          result[0].getTime();
+          return {
+            methodsOk: expectedString === result[0].toUTCString(),
+            allDateInstances: result.reduce(function (prev, curr) {
+              return prev && curr instanceof Date;
+            }, true),
+            values: result.map(function (v) {
+              return v.valueOf();
+            })
+          };
         }, dates);
       }).
       then(function (result) {
-        expect(result.slice(1)).to.eql(dates);
+        expect(result.methodsOk).to.be(true);
+        expect(result.allDateInstances).to.be(true);
+        expect(result.values).to.eql(dates);
         done();
       });
   });

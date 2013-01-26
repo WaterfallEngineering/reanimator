@@ -430,25 +430,26 @@ if (!Function.prototype.bind) {
 }
 
 function capture(config) {
-  config = config || {};
+  this.state.capturing = true;
+  this.state.config = config || {};
 
   // FIXME: dates and random should probably be moved to a beforeReplay method
   // in the appropriate plugin
-  this.log = {
+  this.state.log = this.log = {
     dates: [],
     random: [],
     events: []
   };
 
   for (var k in plugins) {
-    console.log('capture ', k);
-    plugins[k].capture(this.log, config);
+    plugins[k].capture(this.state.log, config);
   }
 }
 
 function replay(log, config) {
-  replay.config = config = config || {};
-  replay.log = log;
+  this.state.replaying = true;
+  this.state.config = replay.config = config = config || {};
+  this.state.log = replay.log = log;
 
   for (var k in plugins) {
     if (plugins[k].beforeReplay) {
@@ -472,11 +473,18 @@ replay.loop = function replayLoop() {
   var event = log.events.pop();
   var delay, now;
 
-  if (!plugins[event.type].replay) {
+  var replayer = plugins[event.type].replay;
+  if (!replayer) {
     throw 'Cannot replay event of type "' + event.type + '"';
   }
 
-  plugins[event.type].replay(event);
+  // if the replayer accepts a second argument, it must be a callback
+  var async = replayer.length > 1;
+  if (async) {
+    replayer(event, log.events.length > 0 ? replayLoop : function () {});
+  } else {
+    replayer(event);
+  }
 
   if (log.events.length > 0) {
     delay = 0;
@@ -500,14 +508,15 @@ replay.loop = function replayLoop() {
 };
 
 function flush() {
-  if (!this.log) {
+  if (!this.state.log) {
     throw 'Must call capture before calling flush';
   }
 
-  return JSON.parse(JSON.stringify(this.log));
+  return JSON.parse(JSON.stringify(this.state.log));
 }
 
 function cleanUp() {
+  this.state.capturing = this.state.replaying = false;
   for (var k in plugins) {
     plugins[k].cleanUp();
   }
@@ -516,9 +525,20 @@ function cleanUp() {
 function plug(type, plugin) {
   plugins[type] = plugin;
   plugin.init(native);
+
+  if (this.state.capturing && plugin.capture) {
+    plugin.capture(this.state.log, this.state.config);
+  } else if (this.state.replaying && plugin.beforeReplay) {
+    plugin.beforeReplay(this.state.log, this.state.config);
+  }
 }
 
 module.exports = global.Reanimator = {
+  state: {
+    capturing: false,
+    replaying: false
+  },
+
   /**
    * ## Reanimator.capture
    * **Capture non-deterministic input**
@@ -648,7 +668,7 @@ function _Date(replaying, year, month, day, hours, minutes, seconds, ms) {
         date = this._value = new _native.Date();
         _log.dates.push(_native.Date.parse(date));
       } else {
-        this._value = _log.dates.pop();
+        this._value = new _native.Date(_log.dates.pop());
       }
     } else if (argsLen === 2) {
       this._value = new _native.Date(year);
@@ -1022,10 +1042,10 @@ function getTraversal(el) {
 
 function traverseToElement(traversal) {
   var el = document;
-  var originalTraversal = traversal ? traversal.slice() : traversal;
+  traversal = traversal ? traversal.slice() : traversal;
 
-  if (traversal === null) {
-    return null;
+  if (traversal === null || traversal === void undefined) {
+    return traversal;
   } else if (traversal === 'window') {
     return window;
   } else if (traversal.length === 0) {
@@ -1261,7 +1281,6 @@ Reanimator.plug('dom', {
     /* NOP */
   },
   beforeReplay: function (log, config) {
-    console.log('beforeReplay!');
     /* NOP */
   },
   replay: dom_replay,
@@ -1270,195 +1289,98 @@ Reanimator.plug('dom', {
 
 });
 
-define('reanimator/plugins/jquery-1.8.3',['require','exports','module','../core','../util/event/serialization'],function (require, exports, module) {
+define('reanimator/plugins/dom-content-loaded',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
+/*jshint evil:true */
 var Reanimator = require('../core');
 var serialization = require('../util/event/serialization');
+var createEvent = require('../util/event/create');
 
-var _native, _log;
+var _native;
 
-var triggered;
+var listeners = [];
+function replayAddEventListener(type, listener, useCapture) {
+  var args = Array.prototype.slice.call(arguments);
+  type = type + '';
 
-function getCaptureOnHandlerFn(fn) {
-  return function (event) {
-    var originalEvent = event.originalEvent;
-    var entry;
-    
-    /*
-     * Only log the event if it is not synthetic and hasn't been logged yet.
-     *
-     * - Events from `$.fn.trigger` do not have an `originalEvent` property.
-     * - Events from `document.createEvent` will have `_reanimator.synthetic`
-     *   set to `true`
-     * - Events that have already been captured will have `_reanimator.captured`
-     *   set to `true`
-     */
-    if (originalEvent && (
-        !originalEvent._reanimator ||
-        (
-          !originalEvent._reanimator.captured &&
-          !originalEvent._reanimator.synthetic
-        )
-      )
-    ) {
-      originalEvent._reanimator = originalEvent._reanimator || {};
-      originalEvent._reanimator.captured = true;
+  if (type.toLowerCase() === 'domcontentloaded') {
+    listeners.push({
+      type: type,
+      listener: listener,
+      useCapture: useCapture
+    });
+  } else {
+    origAddEventListener.apply(document, args);
+  }
+}
 
-      entry = {
-        time: _native.Date.now(),
-        type: 'dom',
-        details: {}
-      };
+var fired = false;
+function beforeReplay(log, config) {
+  document.addEventListener('DOMContentLoaded', function () {
+    fired = true;
+  });
 
-      if (global.MouseEvent && originalEvent instanceof MouseEvent) {
-        entry.details.type = 'MouseEvent';
-      } else if (global.KeyboardEvent && 
-          originalEvent instanceof KeyboardEvent
-      ) {
-        entry.details.type = 'KeyboardEvent';
-      } else if (global.UIEvent && originalEvent instanceof UIEvent) {
-        entry.type = 'UIEvent';
-      } else if (global.CustomEvent && originalEvent instanceof CustomEvent) {
-        entry.details.type = 'CustomEvent';
-      } else {
-        entry.details.type = 'Event';
+  origAddEventListener = document.addEventListener;
+  //origRemoveEventListener = document.removeEventListener;
+
+  document.addEventListener = replayAddEventListener;
+  //document.removeEventListener = capture_removeEventListener;
+}
+
+function replay(entry, done) {
+  function fire(entry, done) {
+    document.addEventListener = origAddEventListener;
+    // add the queued event listeners
+    listeners.forEach(function addQueuedEventListeners(listener) {
+      document.addEventListener(
+        'DOMContentLoaded', listener.listener, listener.useCapture);
+    });
+
+    // fire the event
+    var event = createEvent('Event', entry.details.details);
+    document.dispatchEvent(event);
+    done();
+  }
+
+  if (fired) {
+    fire(entry, done);
+  } else {
+    origAddEventListener.
+      call(document, 'DOMContentLoaded', function onDomContentLoaded() {
+        document.removeEventListener('DOMContentLoaded', onDomContentLoaded);
+        fire(entry, done);
+      });
+  }
+}
+
+function capture(log, config) {
+  // capture DOMContentLoaded exactly once
+  document.addEventListener('DOMContentLoaded', function onDomContentLoaded(e) {
+    log.events.push({
+      time: _native.Date.now(),
+      type: 'dom-content-loaded',
+      details: {
+        details: serialization.serialize(event)
       }
+    });
 
-      entry.details.details = serialization.serialize(originalEvent);
-
-      _log.events.push(entry);
-    }
-
-    fn.apply(this, Array.prototype.slice.call(arguments));
-  };
+    document.removeEventListener('DOMContentLoaded', onDomContentLoaded);
+  });
 }
 
-
-function returnFalse() {
-  return false;
-}
-
-var $on, $trigger, $fix;
-var getOnHandlerFn;
-function on( types, selector, data, fn, /*INTERNAL*/ one ) {
-  /*jshint eqnull:true */
-  /* modified from jQuery 1.8.3 implementation */
-  var origFn, type, result;
-
-  // Types can be a map of types/handlers
-  if ( typeof types === "object" ) {
-    // ( types-Object, selector, data )
-    if ( typeof selector !== "string" ) { // && selector != null
-      // ( types-Object, data )
-      data = data || selector;
-      selector = undefined;
-    }
-    for ( type in types ) {
-      this.on( type, selector, data, types[ type ], one );
-    }
-    return this;
-  }
-
-  if ( data == null && fn == null ) {
-    // ( types, fn )
-    fn = selector;
-    data = selector = undefined;
-  } else if ( fn == null ) {
-    if ( typeof selector === "string" ) {
-      // ( types, selector, fn )
-      fn = data;
-      data = undefined;
-    } else {
-      // ( types, data, fn )
-      fn = data;
-      data = selector;
-      selector = undefined;
-    }
-  }
-
-  if ( fn === false ) {
-    fn = returnFalse;
-  } else if ( !fn ) {
-    return this;
-  }
-
-  origFn = fn;
-  fn = getOnHandlerFn(fn);
-  result = $on.call(this, types, selector, data, fn, one);
-
-  // Use same guid so caller can remove using origFn
-  origFn.guid = fn.guid;
-
-  return result;
-}
-
-/*
-function capture_trigger() {
-  var result;
-  // triggered events are deterministic, so ignore them
-  triggered++;
-  result = $trigger.apply(this, Array.prototype.slice.call(arguments));
-  triggered--;
-  return result;
-}
-*/
-
-function jquery_capture(log, config) {
-  _log = log;
-
-  getOnHandlerFn = getCaptureOnHandlerFn;
-
-  $on = $.fn.on;
-  $fix = $.event.fix;
-
-  $.fn.on = on;
-}
-
-function getReplayOnHandlerFn(fn) {
-  return function (event) {
-    fix(event);
-    fn.apply(this, Array.prototype.slice.call(arguments));
-  };
-}
-
-function fix(event) {
-  var toFix, k;
-
-  if (event._reanimator) {
-    toFix = event._reanimator.toFix || [];
-  }
-
-  event = $fix.call($.event, event);
-  while (toFix && toFix.length > 0) {
-    k = toFix.pop();
-    event[k] = event._reanimator.entry.details[k];
-  }
-
-  return event;
-}
-
-Reanimator.plug('jquery', {
+Reanimator.plug('dom-content-loaded', {
   init: function init(native) {
     _native = native;
   },
-  capture: jquery_capture,
-  beforeReplay: function (log, config) {
-    getOnHandlerFn = getReplayOnHandlerFn;
-
-    $on = $.fn.on;
-    $fix = $.event.fix;
-    $.fn.on = on;
-    $.event.fix = fix;
-  },
-  cleanUp: function jquery_cleanUp() {
-    $.fn.on = $on;
-    $.event.fix = $fix;
-  }
+  capture: capture,
+  beforeReplay: beforeReplay,
+  replay: replay,
+  cleanUp: function cleanUp() {/* NOP */}
 });
 
 });
 
-define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/jquery-1.8.3'],function (require, exports, module) {
+define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
 
 // JavaScript standard library
@@ -1469,9 +1391,7 @@ require('reanimator/plugins/random');
 // DOM
 require('reanimator/plugins/document-create-event');
 require('reanimator/plugins/dom');
-
-// Frameworks
-require('reanimator/plugins/jquery-1.8.3');
+require('reanimator/plugins/dom-content-loaded');
 
 });
 require("reanimator");

@@ -44,15 +44,17 @@ describe('Reanimator interposes on timer interrupts', function () {
         }).
         then(function (result) {
           result = JSON.parse(result);
+          var events = result.events.filter(function (entry) {
+            return entry.type === 'setTimeout';
+          });
 
-          expect(result.events.length).to.be(3);
+          expect(events.length).to.be(3);
 
           var expectedOrder = [0, 2, 1];
           var event;
           for (var i = 0; i < expectedOrder.length; i++) {
-            event = result.events[i];
+            event = events[i];
 
-            expect(event.type).to.be('setTimeout');
             expect(event.details.id).to.be(expectedOrder[i]);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
@@ -85,15 +87,17 @@ describe('Reanimator interposes on timer interrupts', function () {
         }).
         then(function (result) {
           result = JSON.parse(result);
+          var events = result.events.filter(function (entry) {
+            return entry.type === 'setTimeout';
+          });
 
-          expect(result.events.length).to.be(2);
+          expect(events.length).to.be(2);
 
           var expectedOrder = [0, 1];
           var event;
           for (var i = 0; i < expectedOrder.length; i++) {
-            event = result.events[i];
+            event = events[i];
 
-            expect(event.type).to.be('setTimeout');
             expect(event.details.id).to.be(expectedOrder[i]);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
@@ -125,14 +129,16 @@ describe('Reanimator interposes on timer interrupts', function () {
         }).
         then(function (result) {
           result = JSON.parse(result);
+          var events = result.events.filter(function (entry) {
+            return entry.type === 'setInterval';
+          });
 
-          expect(result.events.length).to.be(5);
+          expect(events.length).to.be(5);
 
           var event;
           for (var i = 0; i < result.events.length; i++) {
-            event = result.events[i];
+            event = events[i];
 
-            expect(event.type).to.be('setInterval');
             expect(event.details.id).to.be(0);
             expect(event.time).to.be.above(result.dates[i] - 5);
             expect(event.time).to.be.below(result.dates[i] + 5);
@@ -170,13 +176,16 @@ describe('Reanimator interposes on timer interrupts', function () {
         }).
         then(function (result) {
           result = JSON.parse(result);
+          var events = result.events.filter(function (entry) {
+            return entry.type === 'setInterval';
+          });
 
-          expect(result.events.length).to.be.above(0);
-          expect(result.events.length).to.be.below(5);
+          expect(events.length).to.be.above(0);
+          expect(events.length).to.be.below(5);
 
           var event;
-          for (var i = 0; i < result.events.length; i++) {
-            event = result.events[i];
+          for (var i = 0; i < events.length; i++) {
+            event = events[i];
 
             expect(event.type).to.be('setInterval');
             expect(event.details.id).to.be(0);
