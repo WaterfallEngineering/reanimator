@@ -32,7 +32,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -107,7 +107,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -182,7 +182,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -257,7 +257,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -327,7 +327,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -397,7 +397,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -467,7 +467,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -541,7 +541,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });
@@ -611,7 +611,7 @@ describe('Reanimator replays jQuery event handlers', function () {
             window.logAtReplay = Reanimator.flush();
             window.webdriverDateCount = Reanimator.flush().dates.length;
             window.captured =
-              Reanimator.util.event.serialize(e.originalEvent);
+              Reanimator.util.event.serialization.serialize(e.originalEvent);
             window.capturedTimeStamp = e.timeStamp;
             window.capturedTime = Date.now();
           });

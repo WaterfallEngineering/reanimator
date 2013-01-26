@@ -937,8 +937,25 @@ Reanimator.plug('random', {
 
 });
 
-define('reanimator/util/event/serialize',['require','exports','module'],function (require, exports, module) {
+define('reanimator/util/event/serialization',['require','exports','module'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
+
+function serialize(ev) {
+  var result = {};
+  var val;
+
+  for (var k in ev) {
+    val = ev[k];
+    if (ev[k] === window) {
+      result[k] = 'window';
+    } else {
+      result[k] = ev[k] instanceof Element || ev[k] === document ?
+        getTraversal(ev[k]) : ev[k];
+    }
+  }
+
+  return result;
+}
 
 function getTraversal(el) {
   var result = [];
@@ -968,34 +985,49 @@ function getTraversal(el) {
   return result;
 }
 
-function serialize(ev) {
-  var result = {};
+function traverseToElement(traversal) {
+  var el = document;
+  var originalTraversal = traversal ? traversal.slice() : traversal;
 
-  for (var k in ev) {
-    if (ev[k] === window) {
-      continue;
-    }
-
-    // FIXME: doesn't handle window
-    result[k] =
-      ev[k] instanceof Element ? getTraversal(ev[k]) : ev[k];
+  if (traversal === null) {
+    return null;
+  } else if (traversal === 'window') {
+    return window;
+  } else if (traversal.length === 0) {
+    return document;
   }
 
-  return result;
+  var index = traversal.pop();
+  if (index === 'head') {
+    el = el.head;
+  } else if (index === 'body') {
+    el = el.body;
+  } else {
+    throw 'Cannot traverse into unknown element "' + index + '"';
+  }
+
+  while (traversal.length > 0) {
+    el = el.childNodes[traversal.pop()];
+  }
+
+  return el;
 }
 
 Reanimator.util = Reanimator.util || {};
 Reanimator.util.event = Reanimator.util.event || {};
-Reanimator.util.event.serialize = serialize;
+Reanimator.util.event.serialization = {
+  serialize: serialize,
+  traverseToElement: traverseToElement
+};
 
-module.exports = Reanimator.util.event.serialize = serialize;
+module.exports = Reanimator.util.event.serialization;
 
 });
 
-define('reanimator/plugins/jquery-1.8.3',['require','exports','module','../core','../util/event/serialize'],function (require, exports, module) {
+define('reanimator/plugins/jquery-1.8.3',['require','exports','module','../core','../util/event/serialization'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../core');
-var serialize = require('../util/event/serialize');
+var serialization = require('../util/event/serialization');
 
 var _native, _log;
 
@@ -1032,7 +1064,7 @@ function getOnHandlerFn(fn) {
         entry.details.domEventType = 'Event';
       }
 
-      entry.details.details = serialize(originalEvent);
+      entry.details.details = serialization.serialize(originalEvent);
 
       _log.events.push(entry);
     }
@@ -1123,33 +1155,6 @@ function jquery_capture(log, config) {
   $.fn.trigger = capture_trigger;
 }
 
-function traverseToElement(traversal) {
-  var el = document;
-  var originalTraversal = traversal ? traversal.slice() : traversal;
-
-  // FIXME: doesn't handle window
-  if (traversal === null) {
-    return null;
-  } else if (traversal.length === 0) {
-    return document;
-  }
-
-  var index = traversal.pop();
-  if (index === 'head') {
-    el = el.head;
-  } else if (index === 'body') {
-    el = el.body;
-  } else {
-    throw 'Cannot traverse into unknown element "' + index + '"';
-  }
-
-  while (traversal.length > 0) {
-    el = el.childNodes[traversal.pop()];
-  }
-
-  return el;
-}
-
 var currEvent;
 function fix(event) {
   var k;
@@ -1167,6 +1172,7 @@ function fix(event) {
   return event;
 }
 
+// FIXME: should be broken out to a separate module
 var eventCreators = {
   Event: function (details) {
     var event = document.createEvent('Event');
@@ -1208,7 +1214,8 @@ var eventCreators = {
      *   relatedTargetArg)
      */
     event.initFocusEvent(details.type, details.bubbles, details.cancelable,
-      global, details.detail, traverseToElement(details.relatedTarget));
+      global, details.detail,
+      serialization.traverseToElement(details.relatedTarget));
 
     currEvent = {
       event: event,
@@ -1231,7 +1238,7 @@ var eventCreators = {
       global, details.detail,
       details.screenX, details.screenY, details.clientX, details.clientY,
       details.ctrlKey, details.altKey, details.shiftKey, details.metaKey, 
-      details.button, traverseToElement(details.relatedTarget));
+      details.button, serialization.traverseToElement(details.relatedTarget));
 
     currEvent = {
       event: event,
@@ -1342,7 +1349,8 @@ var replayers = {
     var domEvent = create(event.details.details);
 
     $.event.fix = fix;
-    traverseToElement(event.details.details.target).dispatchEvent(domEvent);
+    serialization.
+      traverseToElement(event.details.details.target).dispatchEvent(domEvent);
     $.event.fix = $fix;
   }
 };

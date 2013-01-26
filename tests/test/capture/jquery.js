@@ -31,7 +31,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             Reanimator.capture();
             $('#target').on('click', function (e) {
               window.expected =
-                Reanimator.util.event.serialize(e.originalEvent);
+                Reanimator.util.event.serialization.serialize(e.originalEvent);
               window.expectedTime = Date.now();
             });
           });
@@ -77,7 +77,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             });
             $('#target').on('click', function (e) {
               window.expected =
-                Reanimator.util.event.serialize(e.originalEvent);
+                Reanimator.util.event.serialization.serialize(e.originalEvent);
               window.expectedTime = Date.now();
               $('#trigger-target').click();
             });
@@ -133,7 +133,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
               return driver.executeScript(function () {
                 function handler(e) {
                   window.expected =
-                    Reanimator.util.event.serialize(e.originalEvent);
+                    Reanimator.util.event.serialization.serialize(e.originalEvent);
                   window.expectedTime = Date.now();
                   $('#target').off('click', handler);
                 }
@@ -186,7 +186,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             Reanimator.capture();
             $('#key-target').on('keydown', function (e) {
               window.expected =
-                Reanimator.util.event.serialize(e.originalEvent);
+                Reanimator.util.event.serialization.serialize(e.originalEvent);
               window.expectedTime = Date.now();
             });
           });
