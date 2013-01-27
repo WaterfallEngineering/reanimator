@@ -22,132 +22,296 @@ describe('Reanimator interposes on jQuery event handlers', function () {
     driver.quit();
   });
 
-  describe('click', function () {
-    it('events are captured when fired', function (done) {
-      driver.get(url).
-        then(function () {
-          return driver.executeScript(function () {
-
-            Reanimator.capture();
-            $('#target').on('click', function (e) {
-              window.expected =
-                Reanimator.util.event.serialization.serialize(e.originalEvent);
-              window.expectedTime = Date.now();
-            });
-          });
-        }).
-        then(function (result) {
-          return driver.findElement(webdriver.By.css('#target')).click();
-        }).
-        then(function () {
-          return driver.executeScript(function () {
-            Reanimator.cleanUp();
-            return JSON.stringify({
-              log: Reanimator.flush(),
-              expected: window.expected,
-              expectedTime: window.expectedTime
-            });
-          });
-        }).
-        then(function (result) {
-          result = JSON.parse(result);
-
-          expect(result.log.events.length).to.be(1);
-          expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].details.type).to.be('on');
-          expect(result.log.events[0].details.domEventType).to.be('MouseEvent');
-          expect(result.log.events[0].time).
-            to.be.above(result.expectedTime - 5);
-          expect(result.log.events[0].time).
-            to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details.details).to.eql(result.expected);
-          done();
-        });
+  function dispatchMouseEvent(eventType, target) {
+    var event = Reanimator.util.event.create('MouseEvent', {
+      type: eventType,
+      bubbles: true, cancelable: true,
+      global: window, detail: null,
+      screenX: 0, screenY: 0, clientX: 0, clientY: 0,
+      ctrlKey: false, altKey: false, shiftKey: false, metaKey: false,
+      button: 0, relatedTarget: null
     });
 
-    it('events triggered programmatically are not captured', function (done) {
-      driver.get(url).
-        then(function () {
-          return driver.executeScript(function () {
-            window.triggered = false;
+    event._reanimator.synthetic = true;
 
-            Reanimator.capture();
-            $('#trigger-target').on('click', function (e) {
-              window.triggered = true;
-            });
-            $('#target').on('click', function (e) {
-              window.expected =
-                Reanimator.util.event.serialization.serialize(e.originalEvent);
-              window.expectedTime = Date.now();
-              $('#trigger-target').click();
-            });
-          });
-        }).
-        then(function (result) {
-          return driver.findElement(webdriver.By.css('#target')).click();
-        }).
-        then(function (result) {
-          return driver.executeAsyncScript(function (callback) {
-            setTimeout(function () {
-              $('#trigger-target').click();
-              callback();
-            }, 0);
-          });
-        }).
-        then(function () {
-          return driver.executeScript(function () {
-            Reanimator.cleanUp();
-            return JSON.stringify({
-              log: Reanimator.flush(),
-              expected: window.expected,
-              expectedTime: window.expectedTime,
-              triggered: window.triggered
-            });
-          });
-        }).
-        then(function (result) {
-          result = JSON.parse(result);
+    document.querySelector(target).dispatchEvent(event);
+  }
 
-          expect(result.log.events.length).to.be(2);
-
-          expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].details.type).to.be('on');
-          expect(result.log.events[0].details.domEventType).to.be('MouseEvent');
-          expect(result.log.events[0].time).
-            to.be.above(result.expectedTime - 5);
-          expect(result.log.events[0].time).
-            to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details.details).to.eql(result.expected);
-
-          expect(result.log.events[1].type).to.be('setTimeout');
-
-          expect(result.triggered).to.be(true);
-          done();
-        });
+  function dispatchKeyEvent(eventType, target) {
+    var event = Reanimator.util.event.create('KeyboardEvent', {
+      type: eventType,
+      bubbles: true, cancelable: true,
+      global: window, detail: null,
+      ctrlKey: false, altKey: false, shiftKey: false, metaKey: false,
+      keyCode: 0, charCode: 0
     });
 
-    it('events are not captured after their handler is removed',
+    event._reanimator.synthetic = true;
+
+    document.querySelector(target).dispatchEvent(event);
+  }
+
+  function dispatchUIEvent(eventType, target) {
+    var event = Reanimator.util.event.create('UIEvent', {
+      type: eventType,
+      bubbles: true, cancelable: true,
+      global: window, detail: null
+    });
+
+    event._reanimator.synthetic = true;
+
+    document.querySelector(target).dispatchEvent(event);
+  }
+
+  function dispatchEvent(eventType, target) {
+    var event = Reanimator.util.event.create('Event', {
+      type: eventType,
+      bubbles: true, cancelable: true
+    });
+
+    event._reanimator.synthetic = true;
+
+    document.querySelector(target).dispatchEvent(event);
+  }
+
+  [{
+    name: 'click',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).click();
+    },
+    dispatchEventFn: dispatchMouseEvent,
+    domEventType: 'MouseEvent'
+  }, {
+    name: 'mousedown',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).click();
+    },
+    dispatchEventFn: dispatchMouseEvent,
+    domEventType: 'MouseEvent'
+  }, {
+    name: 'mouseup',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).click();
+    },
+    dispatchEventFn: dispatchMouseEvent,
+    domEventType: 'MouseEvent'
+  }, {
+    name: 'keydown',
+    triggerFn: function (result) {
+      return driver.
+        findElement(webdriver.By.css('#target')).sendKeys('x');
+    },
+    dispatchEventFn: dispatchKeyEvent,
+    domEventType: 'KeyboardEvent'
+  }, {
+    name: 'keyup',
+    triggerFn: function (result) {
+      return driver.
+        findElement(webdriver.By.css('#target')).sendKeys('x');
+    },
+    dispatchEventFn: dispatchKeyEvent,
+    domEventType: 'KeyboardEvent'
+  }, {
+    name: 'keypress',
+    triggerFn: function (result) {
+      return driver.
+        findElement(webdriver.By.css('#target')).sendKeys('x');
+    },
+    dispatchEventFn: dispatchKeyEvent,
+    domEventType: 'KeyboardEvent'
+  }, {
+    name: 'change',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).sendKeys('x').
+        then(function () {
+          return driver.
+            findElement(webdriver.By.css('#trigger-target')).click();
+        });
+    },
+    dispatchEventFn: dispatchEvent,
+    domEventType: 'Event'
+  }, {
+    name: 'focus',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).click();
+    },
+    dispatchEventFn: dispatchEvent,
+    domEventType: 'Event'
+  }, {
+    name: 'blur',
+    triggerFn: function (result) {
+      return driver.findElement(webdriver.By.css('#target')).click().
+        then(function () {
+          return driver.
+            findElement(webdriver.By.css('#trigger-target')).click();
+        });
+    },
+    dispatchEventFn: dispatchEvent,
+    domEventType: 'Event'
+  }].forEach(function (eventToTest) {
+    describe(eventToTest.name, function () {
+      it('events are captured', function (done) {
+        driver.get(url).
+          then(function () {
+            return driver.executeScript(function (eventName) {
+              var createEvent = document.createEvent;
+              Reanimator.capture();
+              document.createEvent = createEvent;
+
+              $('#target').on(eventName, function (e) {
+                window.expected = Reanimator.util.event.serialization.
+                  serialize(e.originalEvent);
+                window.expectedTime = Date.now();
+              });
+            }, eventToTest.name);
+          }).
+          then(eventToTest.triggerFn).
+          then(function () {
+            return driver.executeScript(function () {
+              Reanimator.cleanUp();
+              return JSON.stringify({
+                log: Reanimator.flush(),
+                expected: window.expected,
+                expectedTime: window.expectedTime
+              });
+            });
+          }).
+          then(function (result) {
+            result = JSON.parse(result);
+
+            expect(result.log.events.length).to.be(1);
+            expect(result.log.events[0].type).to.be('dom');
+            expect(result.log.events[0].details.type).
+              to.be(eventToTest.domEventType);
+            expect(result.log.events[0].time).
+              to.be.above(result.expectedTime - 5);
+            expect(result.log.events[0].time).
+              to.be.below(result.expectedTime + 5);
+            expect(result.log.events[0].details.details).
+              to.eql(result.expected);
+            done();
+          });
+      });
+
+      it('events flagged as synthetic are not captured', function (done) {
+        driver.get(url).
+          then(function () {
+            return driver.executeScript(function (eventName) {
+              window.triggered = false;
+
+              var createEvent = document.createEvent;
+              Reanimator.capture();
+              document.createEvent = createEvent;
+              $('#target').on(eventName, function (e) {
+                window.triggered = true;
+              });
+            }, eventToTest.name);
+          }).
+          then(function () {
+            return driver.executeScript(eventToTest.dispatchEventFn,
+              eventToTest.name, '#target');
+          }).
+          then(function () {
+            return driver.executeScript(function () {
+              Reanimator.cleanUp();
+              return JSON.stringify({
+                log: Reanimator.flush(),
+                triggered: window.triggered
+              });
+            });
+          }).
+          then(function (result) {
+            result = JSON.parse(result);
+
+            expect(result.log.events.length).to.be(0);
+
+            expect(result.triggered).to.be(true);
+            done();
+          });
+      });
+
+      it('events triggered by $.fn.trigger are not captured', function (done) {
+        driver.get(url).
+          then(function () {
+            return driver.executeScript(function (eventName) {
+              window.triggered = false;
+
+              var createEvent = document.createEvent;
+              Reanimator.capture();
+              document.createEvent = createEvent;
+              $('#trigger-target').on(eventName, function (e) {
+                window.triggered = true;
+              });
+              $('#target').on(eventName, function (e) {
+                window.expected = Reanimator.util.event.serialization.
+                  serialize(e.originalEvent);
+                window.expectedTime = Date.now();
+                $('#trigger-target').trigger(eventName);
+              });
+            }, eventToTest.name);
+          }).
+          then(eventToTest.triggerFn).
+          then(function (result) {
+            return driver.executeAsyncScript(function (eventName, callback) {
+              setTimeout(function () {
+                $('#trigger-target').trigger(eventName);
+                callback();
+              }, 0);
+            }, eventToTest.name);
+          }).
+          then(function () {
+            return driver.executeScript(function () {
+              Reanimator.cleanUp();
+              return JSON.stringify({
+                log: Reanimator.flush(),
+                expected: window.expected,
+                expectedTime: window.expectedTime,
+                triggered: window.triggered
+              });
+            });
+          }).
+          then(function (result) {
+            result = JSON.parse(result);
+
+            expect(result.log.events.length).to.be(2);
+
+            expect(result.log.events[0].type).to.be('dom');
+            expect(result.log.events[0].details.type).
+              to.be(eventToTest.domEventType);
+            expect(result.log.events[0].time).
+              to.be.above(result.expectedTime - 5);
+            expect(result.log.events[0].time).
+              to.be.below(result.expectedTime + 5);
+            expect(result.log.events[0].details.details).
+              to.eql(result.expected);
+
+            expect(result.log.events[1].type).to.be('setTimeout');
+
+            expect(result.triggered).to.be(true);
+            done();
+          });
+      });
+
+      it('events are not captured after their handler is removed',
         function (done) {
           driver.get(url).
             then(function () {
-              return driver.executeScript(function () {
+              return driver.executeScript(function (eventName) {
                 function handler(e) {
-                  window.expected =
-                    Reanimator.util.event.serialization.serialize(e.originalEvent);
+                  window.expected = Reanimator.util.event.
+                    serialization.serialize(e.originalEvent);
                   window.expectedTime = Date.now();
-                  $('#target').off('click', handler);
+                  $('#target').off(eventName, handler);
                 }
 
+                var createEvent = document.createEvent;
                 Reanimator.capture();
-                $('#target').on('click', handler);
-              });
+                document.createEvent = createEvent;
+                $('#target').on(eventName, handler);
+              }, eventToTest.name);
             }).
-            then(function (result) {
-              return driver.findElement(webdriver.By.css('#target')).click();
-            }).
-            then(function (result) {
-              return driver.findElement(webdriver.By.css('#target')).click();
-            }).
+            then(eventToTest.triggerFn).
+            then(eventToTest.triggerFn).
             then(function () {
               return driver.executeScript(function () {
                 Reanimator.cleanUp();
@@ -162,10 +326,9 @@ describe('Reanimator interposes on jQuery event handlers', function () {
               result = JSON.parse(result);
 
               expect(result.log.events.length).to.be(1);
-              expect(result.log.events[0].type).to.be('jquery');
-              expect(result.log.events[0].details.type).to.be('on');
-              expect(result.log.events[0].details.domEventType).
-                to.be('MouseEvent');
+              expect(result.log.events[0].type).to.be('dom');
+              expect(result.log.events[0].details.type).
+                to.be(eventToTest.domEventType);
               expect(result.log.events[0].time).
                 to.be.above(result.expectedTime - 5);
               expect(result.log.events[0].time).
@@ -175,50 +338,69 @@ describe('Reanimator interposes on jQuery event handlers', function () {
               done();
             });
       });
-    });
 
-  describe('keydown', function () {
-    it('events are captured when fired', function (done) {
-      driver.get(url).
-        then(function () {
-          return driver.executeScript(function () {
+        it('events are captured once per occurrence', function (done) {
+          driver.get(url).
+            then(function () {
+              return driver.executeScript(function (eventName) {
+                function handler1(e) {
+                  window.expected1 = Reanimator.util.event.
+                    serialization.serialize(e.originalEvent);
+                  window.expectedTime1 = Date.now();
+                  $('#target').off(eventName, handler1);
+                }
 
-            Reanimator.capture();
-            $('#key-target').on('keydown', function (e) {
-              window.expected =
-                Reanimator.util.event.serialization.serialize(e.originalEvent);
-              window.expectedTime = Date.now();
+                function handler2(e) {
+                  window.expected2 = Reanimator.util.event.
+                    serialization.serialize(e.originalEvent);
+                  window.expectedTime2 = Date.now();
+                  $('#target').off(eventName, handler2);
+                }
+
+                var createEvent = document.createEvent;
+                Reanimator.capture();
+                document.createEvent = createEvent;
+                $('#target').on(eventName, handler1);
+                $('#target').on(eventName, handler2);
+              }, eventToTest.name);
+            }).
+            then(eventToTest.triggerFn).
+            then(function () {
+              return driver.executeScript(function () {
+                Reanimator.cleanUp();
+                return JSON.stringify({
+                  log: Reanimator.flush(),
+                  expected1: window.expected1,
+                  expectedTime1: window.expectedTime1,
+                  expected2: window.expected2,
+                  expectedTime2: window.expectedTime2
+                });
+              });
+            }).
+            then(function (result) {
+              result = JSON.parse(result);
+
+              expect(result.log.events.length).to.be(1);
+              expect(result.log.events[0].type).to.be('dom');
+              expect(result.log.events[0].details.type).
+                to.be(eventToTest.domEventType);
+
+              expect(result.log.events[0].time).
+                to.be.above(result.expectedTime1 - 5);
+              expect(result.log.events[0].time).
+                to.be.below(result.expectedTime1 + 5);
+              expect(result.log.events[0].details.details).
+                to.eql(result.expected1);
+
+              expect(result.log.events[0].time).
+                to.be.above(result.expectedTime2 - 5);
+              expect(result.log.events[0].time).
+                to.be.below(result.expectedTime2 + 5);
+              expect(result.log.events[0].details.details).
+                to.eql(result.expected2);
+
+              done();
             });
-          });
-        }).
-        then(function (result) {
-          return driver.
-            findElement(webdriver.By.css('#key-target')).sendKeys('x');
-        }).
-        then(function () {
-          return driver.executeScript(function () {
-            Reanimator.cleanUp();
-            return JSON.stringify({
-              log: Reanimator.flush(),
-              expected: window.expected,
-              expectedTime: window.expectedTime
-            });
-          });
-        }).
-        then(function (result) {
-          result = JSON.parse(result);
-
-          expect(result.log.events.length).to.be(1);
-          expect(result.log.events[0].type).to.be('jquery');
-          expect(result.log.events[0].details.type).to.be('on');
-          expect(result.log.events[0].details.domEventType).
-            to.be('KeyboardEvent');
-          expect(result.log.events[0].time).
-            to.be.above(result.expectedTime - 5);
-          expect(result.log.events[0].time).
-            to.be.below(result.expectedTime + 5);
-          expect(result.log.events[0].details.details).to.eql(result.expected);
-          done();
         });
     });
   });
