@@ -937,6 +937,41 @@ Reanimator.plug('random', {
 
 });
 
+define('reanimator/plugins/document-create-event',['require','exports','module','../core'],function (require, exports, module) {
+/* vim: set et ts=2 sts=2 sw=2: */
+var Reanimator = require('../core');
+
+var replay = {};
+var _native;
+
+
+capture_documentCreateEvent = function (type) {
+  var result = _native.documentCreateEvent.call(document, type);
+
+  result._reanimator = {
+    synthetic: true
+  };
+
+  return result;
+};
+
+Reanimator.plug('document-create-event', {
+  init: function init(native) {
+    _native = native;
+    _native.documentCreateEvent = document.createEvent;
+  },
+
+  capture: function capture(log, config) {
+    document.createEvent = capture_documentCreateEvent;
+  },
+
+  cleanUp: function () {
+    document.createEvent = _native.documentCreateEvent;
+  }
+});
+
+});
+
 define('reanimator/util/event/serialization',['require','exports','module'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
 
@@ -1024,164 +1059,17 @@ module.exports = Reanimator.util.event.serialization;
 
 });
 
-define('reanimator/plugins/jquery-1.8.3',['require','exports','module','../core','../util/event/serialization'],function (require, exports, module) {
+define('reanimator/util/event/create',['require','exports','module','../../core'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
-var Reanimator = require('../core');
-var serialization = require('../util/event/serialization');
+var Reanimator = require('../../core');
 
-var _native, _log;
-
-var triggered;
-
-function getOnHandlerFn(fn) {
-  return function (event) {
-    var originalEvent = event.originalEvent;
-    var entry;
-    
-    if (triggered < 1) {
-      // event is not triggered, so capture it
-      entry = {
-        time: _native.Date.now(),
-        type: 'jquery',
-        details: {
-          type: 'on'
-        }
-      };
-
-      if (global.MouseEvent && originalEvent instanceof MouseEvent) {
-        entry.details.domEventType = 'MouseEvent';
-      } else if (global.KeyboardEvent && 
-          originalEvent instanceof KeyboardEvent
-      ) {
-        entry.details.domEventType = 'KeyboardEvent';
-      } else if (global.UIEvent && originalEvent instanceof UIEvent) {
-        entry.domEventType = 'UIEvent';
-      } else if (global.CustomEvent &&
-          originalEvent instanceof CustomEvent
-      ) {
-        entry.details.domEventType = 'CustomEvent';
-      } else {
-        entry.details.domEventType = 'Event';
-      }
-
-      entry.details.details = serialization.serialize(originalEvent);
-
-      _log.events.push(entry);
-    }
-
-    fn.apply(this, Array.prototype.slice.call(arguments));
-  };
-}
-
-
-function returnFalse() {
-  return false;
-}
-
-var $on, $trigger, $fix;
-function capture_on( types, selector, data, fn, /*INTERNAL*/ one ) {
-  /*jshint eqnull:true */
-  /* modified from jQuery 1.8.3 implementation */
-  var origFn, type, result;
-
-  // Types can be a map of types/handlers
-  if ( typeof types === "object" ) {
-    // ( types-Object, selector, data )
-    if ( typeof selector !== "string" ) { // && selector != null
-      // ( types-Object, data )
-      data = data || selector;
-      selector = undefined;
-    }
-    for ( type in types ) {
-      this.on( type, selector, data, types[ type ], one );
-    }
-    return this;
-  }
-
-  if ( data == null && fn == null ) {
-    // ( types, fn )
-    fn = selector;
-    data = selector = undefined;
-  } else if ( fn == null ) {
-    if ( typeof selector === "string" ) {
-      // ( types, selector, fn )
-      fn = data;
-      data = undefined;
-    } else {
-      // ( types, data, fn )
-      fn = data;
-      data = selector;
-      selector = undefined;
-    }
-  }
-
-  if ( fn === false ) {
-    fn = returnFalse;
-  } else if ( !fn ) {
-    return this;
-  }
-
-  origFn = fn;
-  fn = getOnHandlerFn(fn);
-  result = $on.call(this, types, selector, data, fn, one);
-
-  // Use same guid so caller can remove using origFn
-  origFn.guid = fn.guid;
-
-  return result;
-}
-
-function capture_trigger() {
-  var result;
-  // triggered events are deterministic, so ignore them
-  triggered++;
-  result = $trigger.apply(this, Array.prototype.slice.call(arguments));
-  triggered--;
-  return result;
-}
-
-function jquery_capture(log, config) {
-  _log = log;
-
-  $on = $.fn.on;
-  $trigger = $.fn.trigger;
-  $fix = $.event.fix;
-
-  Reanimator.state = Reanimator.state || {};
-  triggered = 0;
-
-  $.fn.on = capture_on;
-
-  $.fn.trigger = capture_trigger;
-}
-
-var currEvent;
-function fix(event) {
-  var k;
-
-  if (event === currEvent.event) {
-    event = $fix.call($.event, event);
-
-    while (currEvent.toFix.length > 0) {
-      k = currEvent.toFix.pop();
-      event[k] = currEvent.details[k];
-    }
-  } else {
-    event = $fix.call($.event, event);
-  }
-  return event;
-}
-
-// FIXME: should be broken out to a separate module
 var eventCreators = {
   Event: function (details) {
     var event = document.createEvent('Event');
 
     event.initEvent(details.type, details.bubbles, details.cancelable);
 
-    currEvent = {
-      event: event,
-      details: details,
+    event._reanimator = {
       toFix: ['timeStamp']
     };
 
@@ -1197,9 +1085,7 @@ var eventCreators = {
     event.initUIEvent(details.type, details.bubbles, details.cancelable,
       global, details.detail);
 
-    currEvent = {
-      event: event,
-      details: details,
+    event._reanimator = {
       toFix: ['timeStamp']
     };
 
@@ -1215,11 +1101,9 @@ var eventCreators = {
      */
     event.initFocusEvent(details.type, details.bubbles, details.cancelable,
       global, details.detail,
-      serialization.traverseToElement(details.relatedTarget));
+      details.relatedTarget);
 
-    currEvent = {
-      event: event,
-      details: details,
+    event._reanimator = {
       toFix: ['timeStamp']
     };
 
@@ -1238,11 +1122,9 @@ var eventCreators = {
       global, details.detail,
       details.screenX, details.screenY, details.clientX, details.clientY,
       details.ctrlKey, details.altKey, details.shiftKey, details.metaKey, 
-      details.button, serialization.traverseToElement(details.relatedTarget));
+      details.button, details.relatedTarget);
 
-    currEvent = {
-      event: event,
-      details: details,
+    event._reanimator = {
       toFix: ['timeStamp']
     };
 
@@ -1318,9 +1200,7 @@ var eventCreators = {
       event.initEvent(details.type, details.bubbles, details.cancelable);
     }
 
-    currEvent = {
-      event: event,
-      details: details,
+    event._reanimator = {
       toFix: [
         'which', 'altGraphKey', 'metaKey', 'altKey', 'shiftKey', 'ctrlKey',
         'keyLocation', 'keyIdentifier', 'pageY', 'pageX', 'layerY',
@@ -1333,36 +1213,228 @@ var eventCreators = {
   }
 };
 
-var replayers = {
-  on: function (event) {
-    var create = eventCreators[event.details.domEventType];
+Reanimator.util = Reanimator.util || {};
+Reanimator.util.event = Reanimator.util.event || {};
 
-    $fix = $.event.fix;
-
-    if (!create) {
-      // XXX: Are we sure we want to throw here? Might make sense to just
-      // default to Event and maybe log a warning to the console
-      throw 'Cannot dispatch event of type "' +
-        event.details.domEventType + '"';
-    }
-
-    var domEvent = create(event.details.details);
-
-    $.event.fix = fix;
-    serialization.
-      traverseToElement(event.details.details.target).dispatchEvent(domEvent);
-    $.event.fix = $fix;
+Reanimator.util.event.create = function createEvent(type, details) {
+  var creator = eventCreators[type];
+  
+  if (!creator) {
+    throw 'No replayer for DOM event of type "' + type + '"';
   }
+
+  return creator(details);
 };
 
-function jquery_replay(event) {
-  var replayer = replayers[event.details.type];
-  
-  if (!replayer) {
-    throw 'No replayer for jQuery event of type "' + event.details.type + '"';
+module.exports = Reanimator.util.event.create;
+
+});
+
+define('reanimator/plugins/dom',['require','exports','module','../core','../util/event/serialization','../util/event/create'],function (require, exports, module) {
+/* vim: set et ts=2 sts=2 sw=2: */
+var Reanimator = require('../core');
+var serialization = require('../util/event/serialization');
+var create = require('../util/event/create');
+
+var _native, _log;
+
+// FIXME: should be broken out to a separate module
+
+function dom_replay(entry) {
+  var relatedTarget = entry.details.details.relatedTarget;
+  entry.details.details.relatedTarget =
+    serialization.traverseToElement(entry.details.details.relatedTarget);
+  var event = create(entry.details.type, entry.details.details);
+  entry.details.details.relatedTarget = relatedTarget;
+
+  event._reanimator.entry = entry;
+
+  serialization.
+    traverseToElement(entry.details.details.target).dispatchEvent(event);
+}
+
+Reanimator.plug('dom', {
+  init: function init(native) {
+    _native = native;
+  },
+  capture: function (log, config) {
+    /* NOP */
+  },
+  beforeReplay: function (log, config) {
+    console.log('beforeReplay!');
+    /* NOP */
+  },
+  replay: dom_replay,
+  cleanUp: function jquery_cleanUp() { }
+});
+
+});
+
+define('reanimator/plugins/jquery-1.8.3',['require','exports','module','../core','../util/event/serialization'],function (require, exports, module) {
+/* vim: set et ts=2 sts=2 sw=2: */
+var Reanimator = require('../core');
+var serialization = require('../util/event/serialization');
+
+var _native, _log;
+
+var triggered;
+
+function getCaptureOnHandlerFn(fn) {
+  return function (event) {
+    var originalEvent = event.originalEvent;
+    var entry;
+    
+    /*
+     * Only log the event if it is not synthetic and hasn't been logged yet.
+     *
+     * - Events from `$.fn.trigger` do not have an `originalEvent` property.
+     * - Events from `document.createEvent` will have `_reanimator.synthetic`
+     *   set to `true`
+     * - Events that have already been captured will have `_reanimator.captured`
+     *   set to `true`
+     */
+    if (originalEvent && (
+        !originalEvent._reanimator ||
+        (
+          !originalEvent._reanimator.captured &&
+          !originalEvent._reanimator.synthetic
+        )
+      )
+    ) {
+      originalEvent._reanimator = originalEvent._reanimator || {};
+      originalEvent._reanimator.captured = true;
+
+      entry = {
+        time: _native.Date.now(),
+        type: 'dom',
+        details: {}
+      };
+
+      if (global.MouseEvent && originalEvent instanceof MouseEvent) {
+        entry.details.type = 'MouseEvent';
+      } else if (global.KeyboardEvent && 
+          originalEvent instanceof KeyboardEvent
+      ) {
+        entry.details.type = 'KeyboardEvent';
+      } else if (global.UIEvent && originalEvent instanceof UIEvent) {
+        entry.type = 'UIEvent';
+      } else if (global.CustomEvent && originalEvent instanceof CustomEvent) {
+        entry.details.type = 'CustomEvent';
+      } else {
+        entry.details.type = 'Event';
+      }
+
+      entry.details.details = serialization.serialize(originalEvent);
+
+      _log.events.push(entry);
+    }
+
+    fn.apply(this, Array.prototype.slice.call(arguments));
+  };
+}
+
+
+function returnFalse() {
+  return false;
+}
+
+var $on, $trigger, $fix;
+var getOnHandlerFn;
+function on( types, selector, data, fn, /*INTERNAL*/ one ) {
+  /*jshint eqnull:true */
+  /* modified from jQuery 1.8.3 implementation */
+  var origFn, type, result;
+
+  // Types can be a map of types/handlers
+  if ( typeof types === "object" ) {
+    // ( types-Object, selector, data )
+    if ( typeof selector !== "string" ) { // && selector != null
+      // ( types-Object, data )
+      data = data || selector;
+      selector = undefined;
+    }
+    for ( type in types ) {
+      this.on( type, selector, data, types[ type ], one );
+    }
+    return this;
   }
 
-  replayer(event);
+  if ( data == null && fn == null ) {
+    // ( types, fn )
+    fn = selector;
+    data = selector = undefined;
+  } else if ( fn == null ) {
+    if ( typeof selector === "string" ) {
+      // ( types, selector, fn )
+      fn = data;
+      data = undefined;
+    } else {
+      // ( types, data, fn )
+      fn = data;
+      data = selector;
+      selector = undefined;
+    }
+  }
+
+  if ( fn === false ) {
+    fn = returnFalse;
+  } else if ( !fn ) {
+    return this;
+  }
+
+  origFn = fn;
+  fn = getOnHandlerFn(fn);
+  result = $on.call(this, types, selector, data, fn, one);
+
+  // Use same guid so caller can remove using origFn
+  origFn.guid = fn.guid;
+
+  return result;
+}
+
+/*
+function capture_trigger() {
+  var result;
+  // triggered events are deterministic, so ignore them
+  triggered++;
+  result = $trigger.apply(this, Array.prototype.slice.call(arguments));
+  triggered--;
+  return result;
+}
+*/
+
+function jquery_capture(log, config) {
+  _log = log;
+
+  getOnHandlerFn = getCaptureOnHandlerFn;
+
+  $on = $.fn.on;
+  $fix = $.event.fix;
+
+  $.fn.on = on;
+}
+
+function getReplayOnHandlerFn(fn) {
+  return function (event) {
+    fix(event);
+    fn.apply(this, Array.prototype.slice.call(arguments));
+  };
+}
+
+function fix(event) {
+  var toFix, k;
+
+  if (event._reanimator) {
+    toFix = event._reanimator.toFix || [];
+  }
+
+  event = $fix.call($.event, event);
+  while (toFix && toFix.length > 0) {
+    k = toFix.pop();
+    event[k] = event._reanimator.entry.details[k];
+  }
+
+  return event;
 }
 
 Reanimator.plug('jquery', {
@@ -1370,22 +1442,35 @@ Reanimator.plug('jquery', {
     _native = native;
   },
   capture: jquery_capture,
-  beforeReplay: function (log, config) { /* NOP */ },
-  replay: jquery_replay,
+  beforeReplay: function (log, config) {
+    getOnHandlerFn = getReplayOnHandlerFn;
+
+    $on = $.fn.on;
+    $fix = $.event.fix;
+    $.fn.on = on;
+    $.event.fix = fix;
+  },
   cleanUp: function jquery_cleanUp() {
     $.fn.on = $on;
-    $.fn.trigger = $trigger;
+    $.event.fix = $fix;
   }
 });
 
 });
 
-define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/jquery-1.8.3'],function (require, exports, module) {
+define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/jquery-1.8.3'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
 
+// JavaScript standard library
 require('reanimator/plugins/date');
 require('reanimator/plugins/interrupts');
 require('reanimator/plugins/random');
+
+// DOM
+require('reanimator/plugins/document-create-event');
+require('reanimator/plugins/dom');
+
+// Frameworks
 require('reanimator/plugins/jquery-1.8.3');
 
 });
