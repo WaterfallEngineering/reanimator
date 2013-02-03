@@ -433,11 +433,7 @@ function capture(config) {
   this.state.capturing = true;
   this.state.config = config || {};
 
-  // FIXME: dates and random should probably be moved to a beforeReplay method
-  // in the appropriate plugin
   this.state.log = this.log = {
-    dates: [],
-    random: [],
     events: []
   };
 
@@ -750,6 +746,7 @@ Reanimator.plug('date', {
 
   capture: function capture(log, config) {
     _log = log;
+    _log.dates = [];
     global.Date = capture_Date;
   },
 
@@ -941,6 +938,7 @@ Reanimator.plug('random', {
 
   capture: function capture(log, config) {
     _log = log;
+    _log.random = [];
     global.Math.random = capture_random;
   },
 
