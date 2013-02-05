@@ -50,7 +50,6 @@ test: dist/reanimator.js fixture-server phantom
 		STATUS=$$? ; \
 		kill -9 `cat $(SERVER_PID_FILE)` ; rm $(SERVER_PID_FILE) ; \
 		kill -9 `cat $(PHANTOM_PID_FILE)` ; rm $(PHANTOM_PID_FILE) ; \
-		rm -rf tests/fixtures/js/lib ; \
 		exit $$STATUS
 
 .PHONY: test fixture-server
