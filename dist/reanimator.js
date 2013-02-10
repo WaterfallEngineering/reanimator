@@ -453,10 +453,6 @@ function replay(log, config) {
     }
   }
 
-  // FIXME: dates and random should probably be moved to a beforeReplay method
-  // in the appropriate plugin
-  log.dates = (log.dates || []).slice().reverse();
-  log.random = (log.random || []).slice().reverse();
   log.events = (log.events || []).slice().reverse();
 
   if (log.events.length > 0) {
@@ -752,6 +748,7 @@ Reanimator.plug('date', {
 
   beforeReplay: function replay(log, config) {
     _log = log;
+    _log.dates = (_log.dates || []).slice().reverse();
     global.Date = replay_Date;
   },
 
@@ -944,6 +941,7 @@ Reanimator.plug('random', {
 
   beforeReplay: function replay(log, config) {
     _log = log;
+    _log.random = (_log.random || []).slice().reverse();
     global.Math.random = replay_random;
   },
 
