@@ -31,7 +31,7 @@ fixture-server:
 		cd $(PWD)
 
 phantom:
-	@phantomjs --webdriver=$(DRIVER_PORT) & \
+	@phantomjs --webdriver=$(DRIVER_PORT) 1>.phantom.out & \
 		echo "$$!" > $(PHANTOM_PID_FILE) ; \
 		cd $(PWD)
 
