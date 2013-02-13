@@ -1,7 +1,6 @@
 /* vim: set et ts=2 sts=2 sw=2: */
 
 var expect = require('expect.js');
-var asyncTrialRunner = require('../../util/async-trial-runner');
 
 describe('Reanimator interposes on XMLHttpRequest', function () {
   var build = require('../../util/hooks').build;

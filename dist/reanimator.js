@@ -1944,14 +1944,6 @@ function XMLHttpRequest_replay() {
     }
   }, this);
 
-
-  /*'abort', 'error', 'load', 'loadend',
-    'loadstart', 'progress', */
-  [
-    'load', 'loadend', 'loadstart', 'readystatechange'
-  ].forEach(function (name) {
-    }, this);
-
   // link methods
   _log.xhr.iface.instance.methods.forEach(function (name) {
     this[name] = replayMethodOrProperty.bind(this, name);
@@ -2097,7 +2089,77 @@ Reanimator.plug('xhr', {
 
 });
 
-define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr'],function (require, exports, module) {
+define('reanimator/plugins/local-storage',['require','exports','module','../core'],function (require, exports, module) {
+/* vim: set et ts=2 sts=2 sw=2: */
+var Reanimator = require('../core');
+
+var _native, _log;
+
+/**
+ * Capture all keys in localStorage in index order
+ */
+function snapshot() {
+  var len = localStorage.length;
+  var state = new Array(len);
+
+  for (var i = 0, k; i < len; i++) {
+    k = localStorage.key(i);
+    state[i] = {
+      key: k,
+      value: localStorage[k]
+    };
+  }
+
+  return state;
+}
+
+/**
+ * Set localStorage to state captured in a snapshot
+ */
+function restore(snapshot) {
+  localStorage.clear();
+  for (var i = 0, len = snapshot.length; i < len; i++) {
+    localStorage[snapshot[i].key] = snapshot[i].value;
+  }
+}
+
+Reanimator.plug('local-storage', {
+  init: function init(native) {
+    _native = native;
+    _native.localStorage_getItem = window.localStorage.getItem;
+    _native.localStorage_setItem = window.localStorage.setItem;
+    _native.localStorage_clear = window.localStorage.clear;
+  },
+  capture: function xhr_capture(log, config) {
+    _log = log;
+
+    _log.localStorage = {
+        state: snapshot()
+    };
+  },
+  beforeReplay: function (log, config) {
+    var k;
+
+    _log = log;
+
+    _log.localStorage = _log.localStorage || {};
+
+    _log.localStorage.preReplayState = snapshot();
+
+    _log.localStorage.state = _log.localStorage.state || [];
+    restore(_log.localStorage.state);
+  },
+  cleanUp: function xhr_cleanUp() {
+    restore(_log.localStorage.preReplayState || []);
+    window.localStorage.getItem = _native.localStorage_getItem;
+    window.localStorage.setItem = _native.localStorage_setItem;
+    window.localStorage.clear = _native.localStorage_clear;
+  }
+});
+
+});
+
+define('reanimator',['require','exports','module','reanimator/plugins/date','reanimator/plugins/interrupts','reanimator/plugins/random','reanimator/plugins/document-create-event','reanimator/plugins/dom','reanimator/plugins/dom-content-loaded','reanimator/plugins/xhr','reanimator/plugins/local-storage'],function (require, exports, module) {
 /* vim: set et ts=2 sts=2 sw=2: */
 
 // JavaScript standard library
@@ -2110,6 +2172,7 @@ require('reanimator/plugins/document-create-event');
 require('reanimator/plugins/dom');
 require('reanimator/plugins/dom-content-loaded');
 require('reanimator/plugins/xhr');
+require('reanimator/plugins/local-storage');
 
 });
 require("reanimator");
