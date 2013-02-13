@@ -9940,7 +9940,6 @@ function returnFalse() {
 }
 
 var $on, $trigger, $fix;
-var getOnHandlerFn;
 function on( types, selector, data, fn, /*INTERNAL*/ one ) {
   /*jshint eqnull:true */
   /* modified from jQuery 1.8.3 implementation */
@@ -9984,7 +9983,7 @@ function on( types, selector, data, fn, /*INTERNAL*/ one ) {
   }
 
   origFn = fn;
-  fn = getOnHandlerFn(fn);
+  fn = getCaptureOnHandlerFn(fn);
   result = $on.call(this, types, selector, data, fn, one);
 
   // Use same guid so caller can remove using origFn
@@ -9993,21 +9992,8 @@ function on( types, selector, data, fn, /*INTERNAL*/ one ) {
   return result;
 }
 
-/*
-function capture_trigger() {
-  var result;
-  // triggered events are deterministic, so ignore them
-  triggered++;
-  result = $trigger.apply(this, Array.prototype.slice.call(arguments));
-  triggered--;
-  return result;
-}
-*/
-
 function jquery_capture(log, config) {
   _log = log;
-
-  getOnHandlerFn = getCaptureOnHandlerFn;
 
   $on = $.fn.on;
   $fix = $.event.fix;
@@ -10015,24 +10001,17 @@ function jquery_capture(log, config) {
   $.fn.on = on;
 }
 
-function getReplayOnHandlerFn(fn) {
-  return function (event) {
-    fix(event);
-    fn.apply(this, Array.prototype.slice.call(arguments));
-  };
-}
-
 function fix(event) {
   var toFix, k;
 
   if (event._reanimator) {
-    toFix = event._reanimator.toFix || [];
+    toFix = event._reanimator.toFix.slice() || [];
   }
 
   event = $fix.call($.event, event);
   while (toFix && toFix.length > 0) {
     k = toFix.pop();
-    event[k] = event._reanimator.entry.details[k];
+    event[k] = event.originalEvent._reanimator.entry.details.details[k];
   }
 
   return event;
@@ -10044,11 +10023,8 @@ Reanimator.plug('jquery', {
   },
   capture: jquery_capture,
   beforeReplay: function (log, config) {
-    getOnHandlerFn = getReplayOnHandlerFn;
-
     $on = $.fn.on;
     $fix = $.event.fix;
-    $.fn.on = on;
     $.event.fix = fix;
   },
   cleanUp: function jquery_cleanUp() {
