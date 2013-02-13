@@ -40,7 +40,50 @@
         document.addEventListener('DOMContentLoaded', function (e) {
           window.replayed = Reanimator.util.event.serialization.serialize(e);
           window.replayedTime = Date.now();
-        });
+        }, true);
+      },
+
+      'removeEventListener': function () {
+        var log = {
+          "dates": [1359313938775],
+          "random": [],
+          "events": [{
+            "time": 1359313938775,
+            "type": "dom-content-loaded",
+            "details": {
+              details: {
+                "type":"DOMContentLoaded",
+                "timeStamp":1359313938768,
+                "returnValue": true,
+                "eventPhase":2,"target":[],"defaultPrevented":false,
+                "srcElement":[],"cancelable":false,
+                "currentTarget":[],"bubbles":true,"cancelBubble":false,
+                "MOUSEOUT":8,"FOCUS":4096,"CHANGE":32768,"MOUSEMOVE":16,
+                "AT_TARGET":2,"SELECT":16384,"BLUR":8192,"KEYUP":512,
+                "MOUSEDOWN":1,"MOUSEDRAG":32,"BUBBLING_PHASE":3,"MOUSEUP":2,
+                "CAPTURING_PHASE":1,"MOUSEOVER":4,"CLICK":64,"DBLCLICK":128,
+                "KEYDOWN":256,"KEYPRESS":1024,"DRAGDROP":2048
+              }
+            }
+          }]
+        };
+        window.replayedEvent = log.events[0];
+        window.listenerFired = false;
+
+        Reanimator.replay(log);
+
+        function listenerToRemove(e) {
+          window.listenerFired = true;
+        }
+
+        document.addEventListener('DOMContentLoaded', function (e) {
+          window.replayed = Reanimator.util.event.serialization.serialize(e);
+          window.replayedTime = Date.now();
+        }, true);
+
+        document.addEventListener('DOMContentLoaded', listenerToRemove, true);
+        document.
+          removeEventListener('DOMContentLoaded', listenerToRemove, true);
       }
     };
 

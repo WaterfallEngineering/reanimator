@@ -32,7 +32,7 @@ describe('Reanimator replays DOMContentLoaded', function () {
 
   // TODO: We need more tests here, but I can't think of any useful ones at the
   //       moment
-  it('replays callbacks registered by addEventListener', function (done) {
+  it('fires callbacks registered by addEventListener', function (done) {
     driver.get(url + '#addEventListener').
       then(function () {
         return driver.executeScript(function () {
@@ -46,6 +46,37 @@ describe('Reanimator replays DOMContentLoaded', function () {
       }).
       then(function (result) {
         result = JSON.parse(result);
+
+        expectedKeys.forEach(function (k) {
+          expect(result.replayed[k]).
+            to.eql(result.replayedEvent.details.details[k]);
+        });
+
+        expect(result.replayedTime).
+          to.be.above(result.replayedEvent.time - 5);
+        expect(result.replayedTime).
+          to.be.below(result.replayedEvent.time + 5);
+        done();
+      });
+  });
+
+  it('does not fire callbacks dropped by removeEventListener', function (done) {
+    driver.get(url + '#removeEventListener').
+      then(function () {
+        return driver.executeScript(function () {
+          Reanimator.cleanUp();
+          return JSON.stringify({
+            listenerFired: window.listenerFired,
+            replayed: window.replayed,
+            replayedTime: window.replayedTime,
+            replayedEvent: window.replayedEvent
+          });
+        });
+      }).
+      then(function (result) {
+        result = JSON.parse(result);
+
+        expect(result.listenerFired).to.be(false);
 
         expectedKeys.forEach(function (k) {
           expect(result.replayed[k]).

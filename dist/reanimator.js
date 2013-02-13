@@ -1310,17 +1310,27 @@ function replayAddEventListener(type, listener, useCapture) {
   }
 }
 
+function replayRemoveEventListener(type, listener, useCapture) {
+  var args = Array.prototype.slice.call(arguments);
+  type = type + '';
+
+  if (type.toLowerCase() === 'domcontentloaded') {
+    listeners = listeners.filter(function (record) {
+      return record.listener !== listener || record.useCapture !== useCapture;
+    });
+  } else {
+    origRemoveEventListener.apply(document, args);
+  }
+}
+
 var fired = false;
 function beforeReplay(log, config) {
   document.addEventListener('DOMContentLoaded', function () {
     fired = true;
   });
 
-  origAddEventListener = document.addEventListener;
-  //origRemoveEventListener = document.removeEventListener;
-
   document.addEventListener = replayAddEventListener;
-  //document.removeEventListener = capture_removeEventListener;
+  document.removeEventListener = replayRemoveEventListener;
 }
 
 function replay(entry, done) {
@@ -1367,11 +1377,16 @@ function capture(log, config) {
 Reanimator.plug('dom-content-loaded', {
   init: function init(native) {
     _native = native;
+    origAddEventListener = document.addEventListener;
+    origRemoveEventListener = document.removeEventListener;
   },
   capture: capture,
   beforeReplay: beforeReplay,
   replay: replay,
-  cleanUp: function cleanUp() {/* NOP */}
+  cleanUp: function cleanUp() {
+    document.addEventListener = origAddEventListener;
+    document.removeEventListener = origRemoveEventListener;
+  }
 });
 
 });
