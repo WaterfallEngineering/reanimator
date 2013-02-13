@@ -1353,7 +1353,8 @@ function replay(entry, done) {
   } else {
     origAddEventListener.
       call(document, 'DOMContentLoaded', function onDomContentLoaded() {
-        document.removeEventListener('DOMContentLoaded', onDomContentLoaded);
+        origRemoveEventListener.
+          call(document, 'DOMContentLoaded', onDomContentLoaded, false);
         fire(entry, done);
       });
   }
