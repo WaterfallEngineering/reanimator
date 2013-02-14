@@ -1257,16 +1257,20 @@ var _native, _log;
 // FIXME: should be broken out to a separate module
 
 function dom_replay(entry) {
-  var relatedTarget = entry.details.details.relatedTarget;
-  entry.details.details.relatedTarget =
-    serialization.traverseToElement(entry.details.details.relatedTarget);
+  var details = entry.details.details;
+  var relatedTarget = details.relatedTarget;
+  // set related target in entry before creation or creating the event will fail
+  details.relatedTarget =
+    serialization.traverseToElement(details.relatedTarget);
+
   var event = create(entry.details.type, entry.details.details);
-  entry.details.details.relatedTarget = relatedTarget;
+  // restore related target in entry
+  details.relatedTarget = relatedTarget;
 
   event._reanimator.entry = entry;
-
-  serialization.
-    traverseToElement(entry.details.details.target).dispatchEvent(event);
+  var target = serialization.traverseToElement(details.target);
+  target.value = details._reanimator.value;
+  target.dispatchEvent(event);
 }
 
 Reanimator.plug('dom', {

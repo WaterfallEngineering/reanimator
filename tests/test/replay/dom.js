@@ -5,7 +5,7 @@ var asyncTrialRunner = require('../../util/async-trial-runner');
 var webdriver = require('../../../lib/selenium-webdriver/node/webdriver');
 var _ = require('lodash');
 
-describe('Reanimator replays captured DOM events', function () {
+describe('DOM replay', function () {
   var build = require('../../util/hooks').build;
   var url = 'http://localhost:' + process.env.FIXTURE_PORT + '/index.html';
   var driver;
@@ -46,7 +46,7 @@ describe('Reanimator replays captured DOM events', function () {
             "type":"click",
             "timeStamp":1359439690173,
 
-            "isTrusted":false,"_reanimator":{"captured":true},
+            "isTrusted":false,"_reanimator":{"captured":true, "value":"foo"},
             "shiftKey":false,"toElement":[3,1,"body"],"clientY":30,"y":30,
             "x":163,"ctrlKey":false,"relatedTarget":null,"clientX":163,
             "screenY":0,"metaKey":false,"offsetX":69,"altKey":false,
@@ -82,12 +82,13 @@ describe('Reanimator replays captured DOM events', function () {
         "details":{
           "type":"keydown",
           "timeStamp":1359439693355,
-          "_reanimator":{"captured":true},"keyLocation":0,"ctrlKey":false,
-          "shiftKey":false,"keyIdentifier":"U+0058","altKey":false,
-          "metaKey":false,"altGraphKey":false,"pageY":0,"layerY":0,"pageX":0,
-          "charCode":0,"view":"window","which":88,"keyCode":88,"detail":0,
-          "layerX":0,"returnValue":true,"eventPhase":2,"target":[3,1,"body"],
-          "defaultPrevented":false,"srcElement":[3,1,"body"],"cancelable":true,
+          "_reanimator":{"captured":true, "value":"foo"},"keyLocation":0,
+          "ctrlKey":false,"shiftKey":false,"keyIdentifier":"U+0058",
+          "altKey":false,"metaKey":false,"altGraphKey":false,"pageY":0,
+          "layerY":0,"pageX":0,"charCode":0,"view":"window","which":88,
+          "keyCode":88,"detail":0,"layerX":0,"returnValue":true,"eventPhase":2,
+          "target":[3,1,"body"],"defaultPrevented":false,
+          "srcElement":[3,1,"body"],"cancelable":true,
           "currentTarget":[3,1,"body"],"bubbles":true,"cancelBubble":false,
           "MOUSEOUT":8,"FOCUS":4096,"CHANGE":32768,"MOUSEMOVE":16,"AT_TARGET":2,
           "SELECT":16384,"BLUR":8192,"KEYUP":512,"MOUSEDOWN":1,"MOUSEDRAG":32,
@@ -115,8 +116,8 @@ describe('Reanimator replays captured DOM events', function () {
         "details":{
           "type":"change",
           "timeStamp":1359439696213,
-          "_reanimator":{"captured":true},"returnValue":true,"eventPhase":2,
-          "target":[3,1,"body"],"defaultPrevented":false,
+          "_reanimator":{"captured":true, "value":"foo"},"returnValue":true,
+          "eventPhase":2, "target":[3,1,"body"],"defaultPrevented":false,
           "srcElement":[3,1,"body"],"cancelable":false,
           "currentTarget":[3,1,"body"],"bubbles":true,"cancelBubble":false,
           "MOUSEOUT":8,"FOCUS":4096,"CHANGE":32768,"MOUSEMOVE":16,"AT_TARGET":2,
@@ -156,6 +157,7 @@ describe('Reanimator replays captured DOM events', function () {
               document.querySelector('#target').
                 addEventListener(type, function (e) {
                   callback(JSON.stringify({
+                    value: this.value,
                     replayed: Reanimator.util.event.serialization.serialize(e),
                     replayedTime: Date.now()
                   }));
@@ -172,6 +174,8 @@ describe('Reanimator replays captured DOM events', function () {
                 to.eql(log.events[0].details.details[k]);
             });
 
+            expect(result.value).
+              to.be(log.events[0].details.details._reanimator.value);
             expect(result.replayedTime).to.be.below(log.events[0].time + 5);
             expect(result.replayedTime).to.be.above(log.events[0].time - 5);
 
