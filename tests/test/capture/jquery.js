@@ -348,71 +348,71 @@ describe('Reanimator interposes on jQuery event handlers', function () {
             });
       });
 
-        it('events are captured once per occurrence', function (done) {
-          driver.get(url).
-            then(function () {
-              return driver.executeScript(function (eventName) {
-                function handler1(e) {
-                  window.expected1 = Reanimator.util.event.
-                    serialization.serialize(e.originalEvent);
-                  window.expectedTime1 = Date.now();
-                  $('#target').off(eventName, handler1);
-                }
+      it('events are captured once per occurrence', function (done) {
+        driver.get(url).
+          then(function () {
+            return driver.executeScript(function (eventName) {
+              function handler1(e) {
+                window.expected1 = Reanimator.util.event.
+                  serialization.serialize(e.originalEvent);
+                window.expectedTime1 = Date.now();
+                $('#target').off(eventName, handler1);
+              }
 
-                function handler2(e) {
-                  window.expected2 = Reanimator.util.event.
-                    serialization.serialize(e.originalEvent);
-                  window.expectedTime2 = Date.now();
-                  $('#target').off(eventName, handler2);
-                }
+              function handler2(e) {
+                window.expected2 = Reanimator.util.event.
+                  serialization.serialize(e.originalEvent);
+                window.expectedTime2 = Date.now();
+                $('#target').off(eventName, handler2);
+              }
 
-                // use the native createEvent
-                document.createEvent = window._createEvent;
-                $('#target').on(eventName, handler1);
-                $('#target').on(eventName, handler2);
-              }, eventToTest.name);
-            }).
-            then(eventToTest.triggerFn).
-            then(function () {
-              return driver.executeScript(function () {
-                Reanimator.cleanUp();
-                return JSON.stringify({
-                  log: Reanimator.flush(),
-                  expected1: window.expected1,
-                  expectedTime1: window.expectedTime1,
-                  expected2: window.expected2,
-                  expectedTime2: window.expectedTime2
-                });
+              // use the native createEvent
+              document.createEvent = window._createEvent;
+              $('#target').on(eventName, handler1);
+              $('#target').on(eventName, handler2);
+            }, eventToTest.name);
+          }).
+          then(eventToTest.triggerFn).
+          then(function () {
+            return driver.executeScript(function () {
+              Reanimator.cleanUp();
+              return JSON.stringify({
+                log: Reanimator.flush(),
+                expected1: window.expected1,
+                expectedTime1: window.expectedTime1,
+                expected2: window.expected2,
+                expectedTime2: window.expectedTime2
               });
-            }).
-            then(function (result) {
-              result = JSON.parse(result);
-              var events = result.log.events.filter(function (entry) {
-                return entry.type === 'dom';
-              });
-
-              expect(events.length).to.be(1);
-              expect(events[0].type).to.be('dom');
-              expect(events[0].details.type).
-                to.be(eventToTest.domEventType);
-
-              expect(events[0].time).
-                to.be.above(result.expectedTime1 - 5);
-              expect(events[0].time).
-                to.be.below(result.expectedTime1 + 5);
-              expect(events[0].details.details).
-                to.eql(result.expected1);
-
-              expect(events[0].time).
-                to.be.above(result.expectedTime2 - 5);
-              expect(events[0].time).
-                to.be.below(result.expectedTime2 + 5);
-              expect(events[0].details.details).
-                to.eql(result.expected2);
-
-              done();
             });
-        });
+          }).
+          then(function (result) {
+            result = JSON.parse(result);
+            var events = result.log.events.filter(function (entry) {
+              return entry.type === 'dom';
+            });
+
+            expect(events.length).to.be(1);
+            expect(events[0].type).to.be('dom');
+            expect(events[0].details.type).
+              to.be(eventToTest.domEventType);
+
+            expect(events[0].time).
+              to.be.above(result.expectedTime1 - 5);
+            expect(events[0].time).
+              to.be.below(result.expectedTime1 + 5);
+            expect(events[0].details.details).
+              to.eql(result.expected1);
+
+            expect(events[0].time).
+              to.be.above(result.expectedTime2 - 5);
+            expect(events[0].time).
+              to.be.below(result.expectedTime2 + 5);
+            expect(events[0].details.details).
+              to.eql(result.expected2);
+
+            done();
+          });
+      });
     });
   });
 });

@@ -182,5 +182,4 @@ describe('Reanimator replays captured DOM events', function () {
       }).bind(this, k, logs[k]));
     }
   });
-
 });
