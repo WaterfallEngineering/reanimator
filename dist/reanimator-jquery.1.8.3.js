@@ -9904,6 +9904,8 @@ function getCaptureOnHandlerFn(fn) {
     ) {
       originalEvent._reanimator = originalEvent._reanimator || {};
       originalEvent._reanimator.captured = true;
+      originalEvent._reanimator.value =
+        (originalEvent.target || originalEvent.srcElement).value;
 
       entry = {
         time: _native.Date.now(),

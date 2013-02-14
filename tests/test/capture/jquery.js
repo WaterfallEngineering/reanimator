@@ -1,10 +1,9 @@
 /* vim: set et ts=2 sts=2 sw=2: */
 
 var expect = require('expect.js');
-var asyncTrialRunner = require('../../util/async-trial-runner');
 var webdriver = require('../../../lib/selenium-webdriver/node/webdriver');
 
-describe('Reanimator interposes on jQuery event handlers', function () {
+describe('jQuery capture', function () {
   var build = require('../../util/hooks').build;
   var url =
     'http://localhost:' + process.env.FIXTURE_PORT + '/jquery.1.8.3.html';
@@ -100,7 +99,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
     name: 'keydown',
     triggerFn: function (result) {
       return driver.
-        findElement(webdriver.By.css('#target')).sendKeys('x');
+        findElement(webdriver.By.css('#target')).sendKeys('p');
     },
     dispatchEventFn: dispatchKeyEvent,
     domEventType: 'KeyboardEvent'
@@ -108,7 +107,7 @@ describe('Reanimator interposes on jQuery event handlers', function () {
     name: 'keyup',
     triggerFn: function (result) {
       return driver.
-        findElement(webdriver.By.css('#target')).sendKeys('x');
+        findElement(webdriver.By.css('#target')).sendKeys('p');
     },
     dispatchEventFn: dispatchKeyEvent,
     domEventType: 'KeyboardEvent'
@@ -116,14 +115,14 @@ describe('Reanimator interposes on jQuery event handlers', function () {
     name: 'keypress',
     triggerFn: function (result) {
       return driver.
-        findElement(webdriver.By.css('#target')).sendKeys('x');
+        findElement(webdriver.By.css('#target')).sendKeys('p');
     },
     dispatchEventFn: dispatchKeyEvent,
     domEventType: 'KeyboardEvent'
   }, {
     name: 'change',
     triggerFn: function (result) {
-      return driver.findElement(webdriver.By.css('#target')).sendKeys('x').
+      return driver.findElement(webdriver.By.css('#target')).sendKeys('p').
         then(function () {
           return driver.
             findElement(webdriver.By.css('#trigger-target')).click();
@@ -158,9 +157,18 @@ describe('Reanimator interposes on jQuery event handlers', function () {
               // use the native createEvent
               document.createEvent = window._createEvent;
 
+              $('#target').val('foo');
               $('#target').on(eventName, function (e) {
                 window.expected = Reanimator.util.event.serialization.
                   serialize(e.originalEvent);
+
+                window.expected._reanimator = {};
+                for (var k in e.originalEvent._reanimator) {
+                  window.expected._reanimator[k] =
+                    e.originalEvent._reanimator[k];
+                }
+                window.expected._reanimator.value = this.value;
+
                 window.expectedTime = Date.now();
               });
             }, eventToTest.name);
