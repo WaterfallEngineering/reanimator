@@ -1079,11 +1079,68 @@ define('reanimator/util/event/create',['require','exports','module','../../core'
 /* vim: set et ts=2 sts=2 sw=2: */
 var Reanimator = require('../../core');
 
+function createEvent(type) {
+  var ev;
+
+  if (window[type]) {
+    try {
+      ev = document.createEvent(type);
+      return ev;
+    } catch (e) {
+      if (e.message.toLowerCase().indexOf('dom exception') < 0) {
+        throw e;
+      }
+      // fall thru
+    }
+  }
+
+  ev = document.createEvent('Event');
+  return ev;
+}
+
 var eventCreators = {
   Event: function (details) {
     var event = document.createEvent('Event');
 
     event.initEvent(details.type, details.bubbles, details.cancelable);
+
+    event._reanimator = {
+      toFix: ['timeStamp']
+    };
+
+    return event;
+  },
+
+  HashChangeEvent: function (details) {
+    var event = createEvent('HashChangeEvent');
+
+    if (window.HashChangeEvent && event instanceof HashChangeEvent) {
+      event.initHashChangeEvent(details.type,
+        details.bubbles, details.cancelable,
+        details.oldUrl, details.newUrl);
+    } else {
+      event.initEvent(details.type, details.bubbles, details.cancelable);
+      event.oldUrl = details.oldUrl;
+      event.newUrl = details.newUrl;
+    }
+
+    event._reanimator = {
+      toFix: ['timeStamp']
+    };
+
+    return event;
+  },
+
+  PopStateEvent: function (details) {
+    var event = createEvent('PopStateEvent');
+
+    if (window.PopStateEvent && event instanceof PopStateEvent) {
+      event.initPopStateEvent(details.type, details.bubbles, details.cancelable,
+        details.state);
+    } else {
+      event.initEvent(details.type, details.bubbles, details.cancelable);
+      event.state = JSON.parse(JSON.stringify(details.state));
+    }
 
     event._reanimator = {
       toFix: ['timeStamp']
@@ -1099,7 +1156,7 @@ var eventCreators = {
      * initUIEvent(type, canBubble, cancelable, view, detail)
      */
     event.initUIEvent(details.type, details.bubbles, details.cancelable,
-      global, details.detail);
+      details.view, details.detail);
 
     event._reanimator = {
       toFix: ['timeStamp']
@@ -1109,15 +1166,18 @@ var eventCreators = {
   },
 
   FocusEvent: function (details) {
-    var event = document.createEvent('FocusEvent');
+    var event = createEvent('FocusEvent');
 
-    /*
-     * initFocusEvent(eventType, canBubble, cancelable, viewArg, detailArg,
-     *   relatedTargetArg)
-     */
-    event.initFocusEvent(details.type, details.bubbles, details.cancelable,
-      global, details.detail,
-      details.relatedTarget);
+    if (window.FocusEvent && event instanceof FocusEvent) {
+      event.initFocusEvent(details.type, details.bubbles, details.cancelable,
+        details.view, details.detail,
+        details.relatedTarget);
+    } else {
+      event.initEvent(details.type, details.bubbles, details.cancelable);
+      event.view = details.view;
+      event.detail = JSON.parse(JSON.stringify(details.detail));
+      event.relatedTarget = details.relatedTarget;
+    }
 
     event._reanimator = {
       toFix: ['timeStamp']
@@ -1236,7 +1296,7 @@ Reanimator.util.event.create = function createEvent(type, details) {
   var creator = eventCreators[type];
   
   if (!creator) {
-    throw 'No replayer for DOM event of type "' + type + '"';
+    throw 'No event creator for DOM event of type "' + type + '"';
   }
 
   return creator(details);
