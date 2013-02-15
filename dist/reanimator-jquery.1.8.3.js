@@ -9875,10 +9875,13 @@ define("jquery-1.8.3", function(){});
 
 /* vim: set et ts=2 sts=2 sw=2: */
 var serialization = Reanimator.util.event.serialization;
+var eventTypes = Reanimator.util.event.types;
 
 var _native, _log;
 
 var triggered;
+
+var eventTypes = [];
 
 function getCaptureOnHandlerFn(fn) {
   return function (event) {
