@@ -10,6 +10,8 @@
   (function () {
   var REPLAY_TOKEN = '?replay=';
   var query = location.search;
+  var CAPTURE_TOKEN = '?capture';
+  var hash = location.hash;
   var id = Date.now();
   var nativeSetInterval = setInterval;
   var idEl, log, len;
@@ -29,7 +31,9 @@
     Reanimator.replay(JSON.parse(log), {
       delay: 'realtime'
     });
-  } else {
+  } else if (hash.indexOf(CAPTURE_TOKEN) >= 0) {
+    hash = hash.split(CAPTURE_TOKEN);
+    location.hash = hash[0];
     console.log(id);
     nativeSetInterval.call(window, function () {
       if (!idEl) {
