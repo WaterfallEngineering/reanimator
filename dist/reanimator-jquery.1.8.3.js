@@ -9889,12 +9889,14 @@ function getCaptureOnHandlerFn(fn) {
      * Only log the event if it is not synthetic and hasn't been logged yet.
      *
      * - Events from `$.fn.trigger` do not have an `originalEvent` property.
+     * - Events from `$.fn.simulate` do not have an `originalEvent.type`
+     *   property.
      * - Events from `document.createEvent` will have `_reanimator.synthetic`
      *   set to `true`
      * - Events that have already been captured will have `_reanimator.captured`
      *   set to `true`
      */
-    if (originalEvent && (
+    if (originalEvent && originalEvent.type && (
         !originalEvent._reanimator ||
         (
           !originalEvent._reanimator.captured &&
