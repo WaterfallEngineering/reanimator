@@ -12,11 +12,21 @@
   var query = location.search;
   var id = Date.now();
   var nativeSetInterval = setInterval;
-  var idEl;
+  var idEl, log, len;
 
   if (query.indexOf(REPLAY_TOKEN) >= 0) {
     query = query.split(REPLAY_TOKEN);
-    Reanimator.replay(JSON.parse(localStorage['reanimator-' + query[1]]), {
+    log = localStorage['reanimator-' + query[1]];
+    len = log.length;
+
+    setTimeout(function () {
+      var el = document.createElement('p');
+      el.innerHTML =
+        'Replaying log ' + id + ' (' + (len / 1024).toFixed(2) + 'KB)';
+      document.querySelector('#info').appendChild(el);
+    }, 500);
+
+    Reanimator.replay(JSON.parse(log), {
       delay: 'realtime'
     });
   } else {
@@ -31,6 +41,8 @@
 
       localStorage['reanimator-' + id] = JSON.stringify(Reanimator.flush());
     }, 500);
+
+    localStorage.clear();
     Reanimator.capture();
   }
   }());
