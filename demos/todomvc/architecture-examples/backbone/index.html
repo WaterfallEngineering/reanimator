@@ -9,15 +9,14 @@
   <script>
   (function () {
   var REPLAY_TOKEN = '?replay=';
-  var hash = location.hash;
+  var query = location.search;
   var id = Date.now();
   var nativeSetInterval = setInterval;
   var idEl;
 
-  if (hash.indexOf(REPLAY_TOKEN) >= 0) {
-    hash = hash.split(REPLAY_TOKEN);
-    location.hash = hash[0];
-    Reanimator.replay(JSON.parse(localStorage['reanimator-' + hash[1]]), {
+  if (query.indexOf(REPLAY_TOKEN) >= 0) {
+    query = query.split(REPLAY_TOKEN);
+    Reanimator.replay(JSON.parse(localStorage['reanimator-' + query[1]]), {
       delay: 'realtime'
     });
   } else {
@@ -25,7 +24,8 @@
     nativeSetInterval.call(window, function () {
       if (!idEl) {
         idEl = document.createElement('p');
-        idEl.innerHTML = 'Reanimator ID: ' + id;
+        idEl.innerHTML =
+          '<a href="?replay=' + id + '">' + 'Reanimator ID: ' + id + '<\/a>';
         document.querySelector('#info').appendChild(idEl);
       }
 
