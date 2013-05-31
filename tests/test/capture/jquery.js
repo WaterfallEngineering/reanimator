@@ -187,8 +187,10 @@ describe('jQuery capture', function () {
           then(function (result) {
             result = JSON.parse(result);
             var events = result.log.events.filter(function (entry) {
-              return entry.type === 'dom';
+              return entry.type === 'dom' &&
+                entry.details.details.type === eventToTest.name;
             });
+            //console.log(require('util').inspect(events, false, 3));
 
             expect(events.length).to.be(1);
             expect(events[0].details.type).
@@ -232,7 +234,8 @@ describe('jQuery capture', function () {
           then(function (result) {
             result = JSON.parse(result);
             var events = result.log.events.filter(function (entry) {
-              return entry.type === 'dom';
+              return entry.type === 'dom' &&
+                entry.details.details.type === eventToTest.name;
             });
 
             expect(events.length).to.be(0);
@@ -284,7 +287,8 @@ describe('jQuery capture', function () {
           then(function (result) {
             result = JSON.parse(result);
             var events = result.log.events.filter(function (entry) {
-              return entry.type === 'dom' ||
+              return (entry.type === 'dom' &&
+                entry.details.details.type === eventToTest.name) ||
                 entry.type === 'setTimeout';
             });
 
@@ -339,7 +343,8 @@ describe('jQuery capture', function () {
             then(function (result) {
               result = JSON.parse(result);
               var events = result.log.events.filter(function (entry) {
-                return entry.type === 'dom';
+                return entry.type === 'dom' &&
+                entry.details.details.type === eventToTest.name;
               });
 
               expect(events.length).to.be(1);
@@ -396,7 +401,8 @@ describe('jQuery capture', function () {
           then(function (result) {
             result = JSON.parse(result);
             var events = result.log.events.filter(function (entry) {
-              return entry.type === 'dom';
+              return entry.type === 'dom' &&
+                entry.details.details.type === eventToTest.name;
             });
 
             expect(events.length).to.be(1);
